@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pocket PilotAI</title>
+<!-- ===== THƯ VIỆN CDN: Chart.js (biểu đồ), canvas-confetti (pháo giấy), html2canvas (xuất ảnh) ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.2/confetti.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+/* ============================================================
+   POCKET PILOTAI v3 — GIAO DIỆN
+   Tông chính: hồng pastel #EC4899 + tím #C084FC
+   ============================================================ */
+:root{
+  --pink:#EC4899; --purple:#C084FC; --blue:#2563EB; --teal:#10B981;
+  --green:#16A34A; --lime:#84CC16; --red:#EF4444; --amber:#F59E0B;
+  --bg:#FDF2F8; --bg2:#FAF5FF; --card:#FFFFFF; --card2:#FDF4FF;
+  --text:#1F2937; --muted:#6B7280; --border:#F3E8FF;
+  --shadow:0 8px 24px rgba(236,72,153,.10);
+  --grad:linear-gradient(135deg,#EC4899,#C084FC);
+  --grad-green:linear-gradient(135deg,#16A34A,#84CC16);
+  --grad-blue:linear-gradient(135deg,#2563EB,#10B981);
+}
+body.dark{
+  --bg:#0F0A1A; --bg2:#171025; --card:#1E1530; --card2:#251A3A;
+  --text:#F3E8FF; --muted:#A78BCA; --border:#3B2A55;
+  --shadow:0 8px 24px rgba(0,0,0,.4);
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif}
+body{background:linear-gradient(160deg,var(--bg),var(--bg2));color:var(--text);min-height:100vh;transition:background .5s,color .5s;font-size:16px}
+
+/* ---------- Micro-interactions & bounce ---------- */
+@keyframes bounce{0%{transform:scale(1)}30%{transform:scale(1.28) rotate(-7deg)}55%{transform:scale(.92) rotate(4deg)}80%{transform:scale(1.06)}100%{transform:scale(1)}}
+.bounce{animation:bounce .55s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{0%{transform:scale(.85);opacity:.4}100%{transform:scale(1);opacity:1}}
+.pop{animation:pop .4s cubic-bezier(.34,1.56,.64,1)}
+button{transition:transform .15s cubic-bezier(.34,1.56,.64,1)}
+button:active{transform:scale(.93)}
+input:focus,select:focus{outline:none;border-color:var(--pink);box-shadow:0 0 0 4px rgba(236,72,153,.15);transform:translateY(-1px)}
+input,select{transition:border .2s,box-shadow .25s,transform .25s}
+
+/* ---------- Header ---------- */
+header{position:sticky;top:0;z-index:50;background:var(--grad);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:var(--shadow)}
+header .logo{font-size:1.35rem;font-weight:800;display:flex;align-items:center;gap:8px}
+header .badges{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;align-items:center}
+.badge{background:rgba(255,255,255,.22);backdrop-filter:blur(6px);border-radius:999px;padding:6px 14px;font-size:.85rem;font-weight:600}
+.iconbtn{background:rgba(255,255,255,.22);border:none;color:#fff;border-radius:999px;min-width:38px;height:38px;font-size:1.05rem;cursor:pointer;padding:0 10px;font-weight:800}
+.iconbtn:hover{transform:scale(1.12);background:rgba(255,255,255,.35)}
+
+/* ---------- Tabs ---------- */
+nav{display:flex;gap:6px;padding:12px 16px 0;max-width:1200px;margin:0 auto;flex-wrap:wrap}
+nav button{flex:1;min-width:100px;border:none;padding:12px 8px;border-radius:14px 14px 0 0;background:transparent;color:var(--muted);font-weight:700;font-size:.92rem;cursor:pointer;transition:all .25s}
+nav button.active{background:var(--card);color:var(--pink);box-shadow:var(--shadow)}
+nav button:hover:not(.active){color:var(--purple)}
+
+main{max-width:1200px;margin:0 auto;padding:16px}
+.tabpane{display:none;animation:fadeSlide .45s ease}
+.tabpane.active{display:block}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ---------- Cards & layout ---------- */
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px;box-shadow:var(--shadow);transition:transform .25s,box-shadow .25s}
+.card:hover{transform:translateY(-3px)}
+.card h3{font-size:1.02rem;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.stat{border-radius:20px;padding:18px;color:#fff;position:relative;overflow:hidden}
+.stat .lbl{font-size:.82rem;opacity:.92;font-weight:600}
+.stat .val{font-size:1.45rem;font-weight:800;margin-top:4px;word-break:break-word}
+.stat.pink{background:var(--grad)} .stat.blue{background:var(--grad-blue)}
+.stat.green{background:var(--grad-green)} .stat.amber{background:linear-gradient(135deg,#F59E0B,#EC4899)}
+
+/* ---------- Form ---------- */
+label{display:block;font-size:.86rem;font-weight:700;margin:10px 0 5px;color:var(--muted)}
+input[type=number],input[type=text],input[type=password],input[type=date],select{width:100%;padding:12px 14px;border-radius:12px;border:2px solid var(--border);background:var(--card2);color:var(--text);font-size:1rem}
+.btn{border:none;border-radius:14px;padding:13px 20px;font-weight:800;font-size:1rem;cursor:pointer;color:#fff;transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s}
+.btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 10px 22px rgba(236,72,153,.35)}
+.btn:active{transform:scale(.95)}
+.btn.main{background:var(--grad);width:100%;font-size:1.08rem;margin-top:14px}
+.btn.ghost{background:var(--card2);color:var(--pink);border:2px solid var(--pink);padding:9px 14px;font-size:.85rem}
+.btn.small{padding:8px 13px;font-size:.83rem;border-radius:10px}
+.btn.blue{background:var(--grad-blue)} .btn.green{background:var(--grad-green)}
+.presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.preset{background:var(--card2);border:1.5px dashed var(--purple);color:var(--text);border-radius:999px;padding:7px 13px;font-size:.82rem;cursor:pointer;font-weight:600;transition:all .2s,transform .15s cubic-bezier(.34,1.56,.64,1)}
+.preset:hover{background:var(--grad);color:#fff;border-style:solid;transform:scale(1.06)}
+
+/* ---------- Vòng tròn tiến độ ---------- */
+.rings{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-around}
+.ringwrap{position:relative;width:132px;text-align:center}
+.ring{width:132px;height:132px;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:12;stroke-linecap:round}
+.ring .bgc{stroke:var(--card2)}
+.ring .fgc{stroke-dasharray:326.73;stroke-dashoffset:326.73;transition:stroke-dashoffset 1.3s cubic-bezier(.22,1,.36,1)}
+.ring-center{position:absolute;top:0;left:0;width:132px;height:132px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-center .pct{font-size:1.5rem;font-weight:800}
+.ring-lbl{font-size:.8rem;font-weight:700;color:var(--muted);margin-top:6px;line-height:1.3}
+
+/* ---------- AI boxes ---------- */
+.insight{background:linear-gradient(135deg,rgba(236,72,153,.09),rgba(192,132,252,.12));border-left:5px solid var(--pink);border-radius:14px;padding:14px 16px;margin-top:10px;line-height:1.65}
+.planbox{background:linear-gradient(135deg,rgba(37,99,235,.08),rgba(16,185,129,.10));border-left:5px solid var(--blue);border-radius:14px;padding:14px 16px;margin-top:10px;line-height:1.7}
+.warnbox{border-radius:14px;padding:12px 15px;margin-top:10px;font-weight:600;display:flex;gap:10px;align-items:flex-start;line-height:1.5;animation:fadeSlide .4s ease}
+.warnbox.red{background:rgba(239,68,68,.12);border-left:5px solid var(--red);color:var(--red)}
+.warnbox.amber{background:rgba(245,158,11,.13);border-left:5px solid var(--amber);color:#B45309}
+.warnbox.green{background:rgba(22,163,74,.12);border-left:5px solid var(--green);color:var(--green)}
+body.dark .warnbox.amber{color:#FCD34D}
+
+/* ---------- Bảng ---------- */
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{padding:11px 10px;text-align:left;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.4px}
+tbody tr:hover{background:var(--card2)}
+.tag{border-radius:999px;padding:3px 11px;font-size:.75rem;font-weight:700;white-space:nowrap}
+.tag.thu{background:rgba(16,185,129,.15);color:var(--teal)}
+.tag.chi{background:rgba(236,72,153,.15);color:var(--pink)}
+.tag.cat{background:rgba(192,132,252,.16);color:var(--purple)}
+.tag.due-soon{background:rgba(239,68,68,.15);color:var(--red)}
+.tag.due-mid{background:rgba(245,158,11,.16);color:#B45309}
+.tag.due-far{background:rgba(22,163,74,.13);color:var(--green)}
+.pri-cao{color:var(--red);font-weight:700}.pri-tb{color:var(--amber);font-weight:700}.pri-thap{color:var(--muted)}
+
+/* ---------- Huy hiệu ---------- */
+.achgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
+.ach{border:2px solid var(--border);border-radius:16px;padding:12px 8px;text-align:center;transition:all .3s;background:var(--card2)}
+.ach .ic{font-size:1.9rem;display:inline-block}
+.ach .nm{font-weight:800;font-size:.82rem;margin-top:4px}
+.ach .ds{font-size:.72rem;color:var(--muted);margin-top:2px;line-height:1.3}
+.ach.locked{filter:grayscale(1);opacity:.45}
+.ach.unlocked{border-color:var(--pink);background:linear-gradient(135deg,rgba(236,72,153,.1),rgba(192,132,252,.12))}
+
+/* ---------- Thử thách ---------- */
+.challenge{border:1.5px dashed var(--purple);border-radius:16px;padding:14px;margin-top:10px}
+.challenge .row{justify-content:space-between}
+.pbar{height:12px;background:var(--card2);border-radius:999px;overflow:hidden;border:1px solid var(--border);margin-top:8px}
+.pbar>div{height:100%;background:var(--grad-green);border-radius:999px;width:0;transition:width 1.1s cubic-bezier(.22,1,.36,1)}
+.pbar.pink>div{background:var(--grad)}
+
+/* ---------- Báo cáo ---------- */
+.report-sec{margin-top:16px;padding-top:12px;border-top:1px dashed var(--border)}
+.report-sec h4{font-size:.95rem;margin-bottom:8px;color:var(--purple)}
+.catrow{display:flex;align-items:center;gap:10px;margin:7px 0}
+.catrow .nm{width:170px;font-size:.88rem;font-weight:600;flex-shrink:0}
+.catrow .bar{flex:1;height:12px;background:var(--card2);border-radius:999px;overflow:hidden}
+.catrow .bar>div{height:100%;background:var(--grad);border-radius:999px;width:0;transition:width 1s cubic-bezier(.22,1,.36,1)}
+.catrow .amt{font-size:.84rem;font-weight:700;width:110px;text-align:right;flex-shrink:0}
+.habit{display:flex;gap:8px;margin:6px 0;line-height:1.5;font-size:.92rem}
+
+/* ---------- Chat ---------- */
+#chatBox{height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:10px;background:var(--card2);border-radius:14px}
+.msg{max-width:82%;padding:11px 15px;border-radius:16px;line-height:1.55;animation:fadeSlide .3s ease;font-size:.94rem}
+.msg.user{align-self:flex-end;background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg.bot{align-self:flex-start;background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px}
+
+/* ---------- Toast ---------- */
+#toasts{position:fixed;top:76px;right:16px;z-index:99;display:flex;flex-direction:column;gap:10px}
+.toast{background:var(--card);border-left:5px solid var(--pink);border-radius:12px;padding:13px 18px;box-shadow:var(--shadow);font-weight:600;min-width:230px;max-width:330px;transform:translateX(120%);transition:transform .45s cubic-bezier(.22,1,.36,1)}
+.toast.show{transform:none}
+.toast.ok{border-color:var(--green)} .toast.warn{border-color:var(--amber)} .toast.err{border-color:var(--red)}
+
+/* ---------- Modal cài đặt ---------- */
+.overlay{position:fixed;inset:0;background:rgba(15,10,26,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.overlay.open{display:flex}
+.modal{background:var(--card);border-radius:20px;padding:24px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.35);animation:pop .35s cubic-bezier(.34,1.56,.64,1)}
+.modal h3{margin-bottom:6px}
+.keyrow{display:flex;gap:8px;align-items:center}
+.keyrow input{flex:1}
+
+/* ---------- Khác ---------- */
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--muted);font-size:.86rem}
+.big{font-size:1.8rem;font-weight:800}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+#micBtn.listening{background:var(--red);animation:pulse 1s infinite}
+footer{text-align:center;padding:22px;color:var(--muted);font-size:.85rem}
+@media(max-width:600px){
+  header .logo{font-size:1.1rem}
+  .stat .val{font-size:1.15rem}
+  nav button{min-width:72px;font-size:.78rem;padding:10px 4px}
+  main{padding:10px}
+  .card{padding:15px}
+  .catrow .nm{width:110px}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= HEADER ================= -->
+<header>
+  <div class="logo">🚀 Pocket PilotAI</div>
+  <div class="badges">
+    <span class="badge" id="lvlBadge">⭐</span>
+    <span class="badge" id="streakBadge">🔥</span>
+    <span class="badge" id="ptsBadge">💎</span>
+    <button class="iconbtn" id="langBtn" title="Tiếng Việt / English">EN</button>
+    <button class="iconbtn" id="setBtn" data-i18n-title="set_open" title="Cài đặt AI">⚙️</button>
+    <button class="iconbtn" id="musicBtn" data-i18n-title="music_t" title="Nhạc nền">🎵</button>
+    <button class="iconbtn" id="darkBtn" data-i18n-title="dark_t" title="Sáng/Tối">🌙</button>
+  </div>
+</header>
+
+<!-- ================= TABS ================= -->
+<nav role="tablist">
+  <button class="active" data-tab="tab-home" data-i18n="tab_home"></button>
+  <button data-tab="tab-tx" data-i18n="tab_tx"></button>
+  <button data-tab="tab-subs" data-i18n="tab_subs"></button>
+  <button data-tab="tab-report" data-i18n="tab_report"></button>
+  <button data-tab="tab-ai" data-i18n="tab_ai"></button>
+</nav>
+
+<main>
+<!-- ============ TAB 1: TỔNG QUAN ============ -->
+<section id="tab-home" class="tabpane active">
+  <div class="grid g2">
+    <div class="card">
+      <h3 data-i18n="f_title"></h3>
+      <label for="inBalance" data-i18n="l1"></label>
+      <input type="number" id="inBalance" min="0" data-i18n-ph="ph1">
+      <label for="inIncome" data-i18n="l2"></label>
+      <input type="number" id="inIncome" min="0" data-i18n-ph="ph2">
+      <label for="inExpense" data-i18n="l3"></label>
+      <input type="number" id="inExpense" min="0" data-i18n-ph="ph3">
+      <label for="inDays" data-i18n="l4"></label>
+      <input type="number" id="inDays" min="1" data-i18n-ph="ph4">
+      <label for="inGoal" data-i18n="l5"></label>
+      <input type="number" id="inGoal" min="0" data-i18n-ph="ph5">
+
+      <div class="presets">
+        <button class="preset" data-p="chi:30000:Ăn sáng" data-i18n="p1"></button>
+        <button class="preset" data-p="chi:50000:Ăn trưa" data-i18n="p2"></button>
+        <button class="preset" data-p="chi:25000:Trà sữa" data-i18n="p3"></button>
+        <button class="preset" data-p="chi:100000:Xăng xe" data-i18n="p4"></button>
+        <button class="preset" data-p="thu:500000:Lương thêm" data-i18n="p5"></button>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button class="btn main" id="analyzeBtn" style="flex:1" data-i18n="analyze"></button>
+        <button class="btn blue" id="micBtn" style="margin-top:14px" data-i18n-title="mic_t">🎤</button>
+      </div>
+      <p class="muted" style="margin-top:8px" data-i18n="mic_tip"></p>
+    </div>
+
+    <div>
+      <div class="grid g4" id="overviewPanel">
+        <div class="stat pink"><div class="lbl" data-i18n="s_bal"></div><div class="val" id="stBalance">0 ₫</div></div>
+        <div class="stat blue"><div class="lbl" data-i18n="s_inc"></div><div class="val" id="stIncome">0 ₫</div></div>
+        <div class="stat amber"><div class="lbl" data-i18n="s_exp"></div><div class="val" id="stExpense">0 ₫</div></div>
+        <div class="stat green"><div class="lbl" data-i18n="s_proj"></div><div class="val" id="stProjected">0 ₫</div></div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h3 data-i18n="pr_title"></h3>
+        <div class="row" style="justify-content:space-between">
+          <div><div class="muted" data-i18n="pr_avg"></div><div class="big" id="stAvg" style="color:var(--pink)">0 ₫</div></div>
+          <div><div class="muted" data-i18n="pr_days"></div><div class="big" id="stDaysLast" style="color:var(--blue)">—</div></div>
+        </div>
+        <div id="insightBox" class="insight"></div>
+        <div id="planBox" class="planbox" style="display:none"></div>
+        <div id="warnings"></div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn ghost small" id="ttsBtn" data-i18n="b_tts"></button>
+          <button class="btn ghost small" id="copyBtn" data-i18n="b_copy"></button>
+          <button class="btn ghost small" id="txtBtn" data-i18n="b_txt"></button>
+          <button class="btn ghost small" id="imgBtn" data-i18n="b_img"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3 data-i18n="r_title"></h3>
+    <div class="rings">
+      <div class="ringwrap">
+        <svg class="ring" viewBox="0 0 132 132"><circle class="bgc" cx="66" cy="66" r="52"/><circle class="fgc" id="ringGoal" cx="66" cy="66" r="52" stroke="#16A34A"/></svg>
+        <div class="ring-center"><span class="pct" id="ringGoalPct">0%</span><span style="font-size:1.1rem">🎯</span></div>
+        <div class="ring-lbl" data-i18n="r_goal"></div>
+      </div>
+      <div class="ringwrap">
+        <svg class="ring" viewBox="0 0 132 132"><circle class="bgc" cx="66" cy="66" r="52"/><circle class="fgc" id="ringWeek" cx="66" cy="66" r="52" stroke="#EC4899"/></svg>
+        <div class="ring-center"><span class="pct" id="ringWeekPct">0%</span><span style="font-size:1.1rem">🛡️</span></div>
+        <div class="ring-lbl" data-i18n="r_week"></div>
+      </div>
+      <div class="ringwrap">
+        <svg class="ring" viewBox="0 0 132 132"><circle class="bgc" cx="66" cy="66" r="52"/><circle class="fgc" id="ringDay" cx="66" cy="66" r="52" stroke="#2563EB"/></svg>
+        <div class="ring-center"><span class="pct" id="ringDayPct">0%</span><span style="font-size:1.1rem">☀️</span></div>
+        <div class="ring-lbl" data-i18n="r_day"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card">
+      <h3 data-i18n="c_title"></h3>
+      <div class="challenge">
+        <div class="row"><span data-i18n="c_daily"></span>
+          <span class="badge" id="dailyStatus" style="background:var(--card2);color:var(--muted)"></span></div>
+        <div class="pbar pink"><div id="dailyBar"></div></div>
+      </div>
+      <div class="challenge">
+        <div class="row"><span data-i18n="c_weekly"></span>
+          <span class="badge" id="weeklyStatus" style="background:var(--card2);color:var(--muted)"></span></div>
+        <div class="pbar"><div id="weeklyBar"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="a_title"></h3>
+      <div class="achgrid" id="achGrid"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TAB 2: GIAO DỊCH ============ -->
+<section id="tab-tx" class="tabpane">
+  <div class="card">
+    <h3><span data-i18n="tx_title"></span> <span class="muted" style="font-weight:400" data-i18n="tx_hint"></span></h3>
+    <div class="row" style="margin-bottom:12px">
+      <span class="muted" data-i18n="sort_lbl"></span>
+      <button class="btn ghost small" data-sort="date" data-i18n="sort_date"></button>
+      <button class="btn ghost small" data-sort="amount" data-i18n="sort_amt"></button>
+      <button class="btn ghost small" data-sort="priority" data-i18n="sort_pri"></button>
+      <span class="muted" style="margin-left:auto" data-i18n="tx_30d"></span>
+    </div>
+    <div style="overflow-x:auto;max-height:440px;overflow-y:auto">
+      <table>
+        <thead><tr><th data-i18n="th_date"></th><th data-i18n="th_type"></th><th data-i18n="th_note"></th><th data-i18n="th_cat"></th><th data-i18n="th_amt"></th><th data-i18n="th_pri"></th><th></th></tr></thead>
+        <tbody id="txBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3 data-i18n="add_title"></h3>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+      <select id="txType"><option value="chi" data-i18n="opt_chi"></option><option value="thu" data-i18n="opt_thu"></option></select>
+      <input type="number" id="txAmount" min="0" data-i18n-ph="ph_amt">
+      <input type="text" id="txNote" data-i18n-ph="ph_note">
+      <select id="txPriority"><option value="3" data-i18n="opt_p3"></option><option value="2" selected data-i18n="opt_p2"></option><option value="1" data-i18n="opt_p1"></option></select>
+      <button class="btn green" id="txAddBtn" data-i18n="b_add"></button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TAB 3: ĐỊNH KỲ ============ -->
+<section id="tab-subs" class="tabpane">
+  <div class="grid g2">
+    <div class="stat pink"><div class="lbl" data-i18n="sub_total"></div><div class="val" id="subTotal">0 ₫</div></div>
+    <div class="stat blue"><div class="lbl" data-i18n="sub_due7"></div><div class="val" id="subDue7">0 ₫</div></div>
+  </div>
+  <div id="subReminders" style="margin-top:6px"></div>
+  <div class="card" style="margin-top:16px">
+    <h3 data-i18n="subs_title"></h3>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th data-i18n="th_service"></th><th data-i18n="th_price"></th><th data-i18n="th_next"></th><th data-i18n="th_left"></th><th></th><th></th></tr></thead>
+        <tbody id="subBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3 data-i18n="sub_add_title"></h3>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+      <select id="subIcon">
+        <option value="🎬">🎬</option><option value="🎵">🎵</option><option value="🤖">🤖</option>
+        <option value="🎮">🎮</option><option value="📚">📚</option><option value="☁️">☁️</option><option value="📦">📦</option>
+      </select>
+      <input type="text" id="subName" data-i18n-ph="ph_subname">
+      <input type="number" id="subAmount" min="0" data-i18n-ph="ph_subamt">
+      <input type="date" id="subDate">
+      <button class="btn green" id="subAddBtn" data-i18n="b_add"></button>
+    </div>
+    <p class="muted" style="margin-top:8px" data-i18n="sub_note"></p>
+  </div>
+</section>
+
+<!-- ============ TAB 4: BÁO CÁO AI ============ -->
+<section id="tab-report" class="tabpane">
+  <div class="card">
+    <h3 data-i18n="rp_title"></h3>
+    <p class="muted" data-i18n="rp_desc"></p>
+    <div class="row" style="margin-top:12px">
+      <button class="btn main" id="reportBtn" style="width:auto;margin:0" data-i18n="rp_btn"></button>
+      <button class="btn ghost small" id="reportCopyBtn" style="display:none" data-i18n="rp_copy"></button>
+    </div>
+  </div>
+  <div class="grid g2" style="margin-top:16px" id="reportChartsWrap" hidden>
+    <div class="card"><h3 data-i18n="rp_cat_title"></h3><canvas id="catChart" height="240"></canvas></div>
+    <div class="card"><h3 data-i18n="rp_week_title"></h3><canvas id="weekChart" height="240"></canvas></div>
+  </div>
+  <div class="card" style="margin-top:16px" id="reportCard" hidden>
+    <h3 data-i18n="rp_result"></h3>
+    <div id="reportBody"></div>
+  </div>
+</section>
+
+<!-- ============ TAB 5: TRỢ LÝ ============ -->
+<section id="tab-ai" class="tabpane">
+  <div class="card">
+    <h3><span data-i18n="chat_title"></span> <span class="badge" id="aiMode" style="background:var(--card2);color:var(--muted);font-size:.75rem"></span></h3>
+    <p class="muted" style="margin-bottom:10px" data-i18n="chat_hint"></p>
+    <div id="chatBox" aria-live="polite"></div>
+    <div class="row" style="margin-top:12px">
+      <input type="text" id="chatInput" style="flex:1" data-i18n-ph="ph_chat">
+      <button class="btn main" id="chatSend" style="width:auto;margin:0" data-i18n="b_send"></button>
+    </div>
+    <div class="presets" style="margin-top:10px">
+      <button class="preset chat-q" data-i18n="q1"></button>
+      <button class="preset chat-q" data-i18n="q2"></button>
+      <button class="preset chat-q" data-i18n="q3"></button>
+      <button class="preset chat-q" data-i18n="q4"></button>
+      <button class="preset chat-q" data-i18n="q5"></button>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ============ MODAL CÀI ĐẶT AI ============ -->
+<div class="overlay" id="setOverlay">
+  <div class="modal">
+    <h3 data-i18n="set_title"></h3>
+    <p class="muted" data-i18n="set_note"></p>
+    <label for="keyInput" data-i18n="set_key_lbl"></label>
+    <div class="keyrow">
+      <input type="password" id="keyInput" placeholder="sk-...">
+      <button class="btn ghost small" id="keyEye" type="button">👁️</button>
+    </div>
+    <label for="modelSel" data-i18n="set_model_lbl"></label>
+    <select id="modelSel">
+      <option value="gpt-4o-mini">gpt-4o-mini</option>
+      <option value="gpt-4o">gpt-4o</option>
+      <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+      <option value="gpt-4.1">gpt-4.1</option>
+    </select>
+    <p class="muted" id="keyStatus" style="margin-top:10px"></p>
+    <div class="row" style="margin-top:14px">
+      <button class="btn green" id="keySave" style="flex:1" data-i18n="set_save"></button>
+      <button class="btn ghost" id="keyClear" data-i18n="set_clear"></button>
+      <button class="btn ghost" id="setClose" data-i18n="set_close"></button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+<footer data-i18n="footer"></footer>
+
+<script>
+/* ============================================================
+   POCKET PILOTAI v3 — LOGIC CHÍNH
+   - Chatbot: OpenAI API (key nhập ngay trên UI, lưu localStorage)
+   - Song ngữ: Tiếng Việt / English
+   - Đã sửa: tin nhắn chat bị lặp từ cuối (do phím Enter khi đang
+     gõ tiếng Việt/bộ gõ IME), farm điểm khi bật/tắt dark mode
+   ============================================================ */
+
+/* ---- API key dự phòng trong mã (tuỳ chọn) ----
+   tôi có API key cho AI bạn hãy để trống để tôi có thể điền vào đó
+   Khuyến nghị: nhập key ngay trong app qua nút ⚙️ trên thanh tiêu đề. */
+const AI_API_KEY_FALLBACK = ""; // ← OpenAI key (sk-...), ưu tiên key nhập trong UI
+
+/* ---------- TIỆN ÍCH ---------- */
+const $ = id => document.getElementById(id);
+const fmt = n => (isFinite(n) ? Math.round(n).toLocaleString('vi-VN') : '—') + ' ₫';
+const todayISO = (off=0) => { const d=new Date(); d.setDate(d.getDate()+off); return d.toISOString().slice(0,10); };
+const dLabel = iso => { const d=new Date(iso); return d.getDate()+'/'+(d.getMonth()+1); };
+const daysUntil = iso => Math.ceil((new Date(iso) - new Date(todayISO()))/86400000);
+const store = {
+  get(k,d){ try{ return localStorage.getItem(k) ?? d; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+function bounceEl(el){ if(!el) return; el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }
+document.addEventListener('click', e=>{ const b=e.target.closest('button'); if(b) bounceEl(b); });
+
+/* ---------- HẰNG SỐ ---------- */
+const WEEK_BUDGET = 1500000;
+const DAILY_CHALLENGE = 200000;
+const RING_C = 326.73;
+
+/* ============================================================
+   ĐA NGÔN NGỮ (VI / EN)
+   ============================================================ */
+let lang = store.get('ppai_lang','vi');
+const I18N = {
+vi: {
+  tab_home:'🏠 Tổng quan', tab_tx:'📒 Giao dịch', tab_subs:'🔄 Định kỳ', tab_report:'📊 Báo cáo AI', tab_ai:'🤖 Trợ lý',
+  f_title:'✍️ Nhập dữ liệu tài chính',
+  l1:'💰 Ô 1 — Số dư hiện tại (VND)', l2:'📥 Ô 2 — Khoản thu hôm nay (VND)', l3:'📤 Ô 3 — Khoản chi hôm nay (VND)',
+  l4:'📅 Ô 4 — Số ngày còn lại đến kỳ nhận tiền tiếp theo', l5:'🎯 Ô 5 — Mục tiêu tiết kiệm cuối kỳ (VND)',
+  ph1:'VD: 2800000', ph2:'VD: 200000', ph3:'VD: 120000', ph4:'VD: 12', ph5:'VD: 1000000',
+  p1:'🍜 Chi 30k ăn sáng', p2:'🍱 Chi 50k ăn trưa', p3:'🧋 Chi 25k trà sữa', p4:'⛽ Chi 100k xăng', p5:'💵 Thu 500k',
+  analyze:'✨ Phân tích bằng AI', mic_t:'Nói: “thêm chi 50k ăn sáng”',
+  mic_tip:'💡 Mẹo: bấm 🎤 và nói “thêm chi 50 nghìn ăn sáng” — app tự nhập và phân loại!',
+  s_bal:'💰 Số dư hiện tại', s_inc:'📥 Tổng thu tuần', s_exp:'📤 Tổng chi tuần', s_proj:'🏁 Số dư dự kiến cuối kỳ',
+  pr_title:'🔮 Dự đoán & Kế hoạch AI', pr_avg:'Chi trung bình / ngày', pr_days:'Tiền đủ dùng trong',
+  days_u:n=>n+' ngày',
+  insight_default:'👋 Nhập dữ liệu và bấm <strong>“Phân tích bằng AI”</strong> để nhận lời khuyên nhé!',
+  b_tts:'🔊 Đọc lời khuyên', b_copy:'📋 Sao chép', b_txt:'📄 Tải văn bản', b_img:'🖼️ Tải ảnh',
+  r_title:'⭕ Vòng tiến độ mục tiêu', r_goal:'Mục tiêu tiết kiệm', r_week:'Ngân sách tuần đã dùng', r_day:'Hạn mức hôm nay đã dùng',
+  c_title:'🏆 Thử thách',
+  c_daily:'☀️ <strong>Hôm nay:</strong> chi dưới 200.000 ₫ <span class="muted">(+30đ)</span>',
+  c_weekly:'🗓️ <strong>Tuần này:</strong> tổng chi dưới 1.500.000 ₫ <span class="muted">(+50đ)</span>',
+  c_wait:'⏳ Đang chờ', c_ok:'✅ Đang đạt!', c_over:v=>'❌ Vượt ('+fmt(v)+')',
+  a_title:'🎖️ Huy hiệu thành tích',
+  ach:{first:['Khởi đầu','Thêm giao dịch đầu tiên'],streak3:['Bền bỉ','Chuỗi 3 ngày liên tiếp'],analyst:['Nhà phân tích','Phân tích AI 5 lần'],goal:['Chạm mục tiêu','Dự kiến đạt mục tiêu tiết kiệm'],daily:['Kỷ luật ngày','Hoàn thành thử thách ngày'],weekly:['Thủ môn tuần','Hoàn thành thử thách tuần'],lv3:['Cao thủ','Đạt cấp độ 3'],report:['Kiểm toán viên','Tạo báo cáo 30 ngày']},
+  lvl:n=>'⭐ Cấp '+n, streak:n=>'🔥 '+n+' ngày', pts:n=>'💎 '+n+' điểm',
+  tx_title:'📒 Nhật ký giao dịch', tx_hint:'(AI tự phân loại danh mục)', sort_lbl:'Sắp xếp theo:',
+  sort_date:'📅 Ngày', sort_amt:'💵 Số tiền', sort_pri:'⚡ Ưu tiên', tx_30d:'Hiển thị 30 ngày gần nhất',
+  th_date:'Ngày', th_type:'Loại', th_note:'Nội dung', th_cat:'Danh mục', th_amt:'Số tiền', th_pri:'Ưu tiên',
+  tag_thu:'Thu', tag_chi:'Chi', pri3:'🔴 Cao', pri2:'🟡 TB', pri1:'⚪ Thấp',
+  add_title:'➕ Thêm giao dịch nhanh', opt_chi:'📤 Chi', opt_thu:'📥 Thu',
+  ph_amt:'Số tiền (VND)', ph_note:'Nội dung (VD: ăn trưa)', opt_p3:'🔴 Ưu tiên cao', opt_p2:'🟡 Trung bình', opt_p1:'⚪ Thấp', b_add:'Thêm ✓',
+  sub_total:'🔄 Tổng chi định kỳ / tháng', sub_due7:'📆 Sắp đến hạn trong 7 ngày',
+  subs_title:'🔄 Các gói đăng ký của bạn', th_service:'Dịch vụ', th_price:'Giá / tháng', th_next:'Kỳ thanh toán tới', th_left:'Còn lại',
+  due_today:'Hôm nay!', due_over:'Quá hạn!', due_left:n=>'Còn '+n+' ngày', b_paid:'✓ Đã trả',
+  sub_add_title:'➕ Thêm gói đăng ký', ph_subname:'Tên dịch vụ (VD: Netflix)', ph_subamt:'Giá / tháng (VND)',
+  sub_note:'🔔 App sẽ tự nhắc khi còn ≤ 5 ngày đến hạn và tính gộp vào dự báo dòng tiền.',
+  sub_paid:(n,d)=>'✅ Đã ghi nhận thanh toán '+n+' — hẹn kỳ sau '+d, sub_added:n=>'🔄 Đã thêm gói '+n+'!', sub_del:'🗑️ Đã xoá gói đăng ký',
+  sub_remind:(ic,n,a,when)=>`🔔 <span><strong>${ic} ${n}</strong> sẽ tự động trừ <strong>${fmt(a)}</strong> ${when}. Kiểm tra xem bạn còn dùng dịch vụ này không nhé!</span>`,
+  sub_today:'<strong>hôm nay</strong>', sub_in:(d,dt)=>`sau <strong>${d} ngày</strong> (${dt})`,
+  sub_toast:(n,d,a)=>`🔔 ${n}: còn ${d} ngày đến kỳ thanh toán ${fmt(a)}`,
+  rp_title:'📊 Báo cáo tài chính 30 ngày — do AI phân tích',
+  rp_desc:'AI tổng hợp toàn bộ giao dịch 30 ngày gần nhất, so sánh với 30 ngày trước đó, tìm mẫu chi tiêu và đưa khuyến nghị cá nhân hoá.',
+  rp_btn:'🧠 Tạo báo cáo 30 ngày', rp_copy:'📋 Sao chép báo cáo', rp_cat_title:'🍩 Cơ cấu chi theo danh mục',
+  rp_week_title:'📊 Thu – Chi 4 tuần gần nhất', rp_result:'📋 Kết quả phân tích',
+  rp1:'1️⃣ Tổng quan 30 ngày', rp2:'2️⃣ Chi theo danh mục', rp3:'3️⃣ Khoản chi lớn nhất', rp4:'4️⃣ So sánh với tháng trước',
+  rp5:'5️⃣ Thói quen tích cực', rp6:'6️⃣ Thói quen cần sửa', rp7:'7️⃣ Khuyến nghị hành động của AI',
+  rp_inc:'📥 Tổng thu', rp_exp:'📤 Tổng chi', rp_diff:'💰 Chênh lệch', rp_save:'✂️ Có thể tiết kiệm',
+  rp_bigcat:(c,a,p)=>`🏔️ <span>Danh mục "ngốn ví" nhất: <strong>${c}</strong> với ${a} (${p}% tổng chi).</span>`,
+  rp_bigtx:(n,a,d)=>`💸 <span>Giao dịch đơn lớn nhất: <strong>${n}</strong> — ${a} (${d}).</span>`,
+  rp_chi:(up,p,a,b)=>`${up?'📕':'📗'} <span>Chi tiêu: <strong>${up?'tăng':'giảm'} ${p}%</strong> (${a} → ${b}).</span>`,
+  rp_thu:(up,p,a,b)=>`${up?'📗':'📕'} <span>Thu nhập: <strong>${up?'tăng':'giảm'} ${p}%</strong> (${a} → ${b}).</span>`,
+  rp_trend:(up,p)=>`${up?'📈':'📉'} <span>Xu hướng trong tháng: nửa cuối ${up?'tăng':'giảm'} ${p}% so với nửa đầu.</span>`,
+  gh_log:d=>`Ghi chép đều đặn ${d}/30 ngày — nền tảng vàng của quản lý tài chính.`,
+  gh_flow:(t,c)=>`Thu (${fmt(t)}) vẫn cao hơn chi (${fmt(c)}) — dòng tiền dương.`,
+  gh_streak:n=>`Chuỗi ${n} ngày sử dụng app liên tiếp — kỷ luật tuyệt vời!`,
+  gh_start:'Bạn đã bắt đầu theo dõi chi tiêu — bước đầu tiên quan trọng nhất!',
+  bh_repeat:l=>`Chi lặp lại nhiều: ${l}.`,
+  bh_lowpri:(p,s)=>`${p}% tổng chi là khoản ưu tiên thấp (${fmt(s)}) — dễ cắt mà chưa cắt.`,
+  bh_trend:p=>`Chi tiêu nửa cuối tháng tăng ${p}% so với nửa đầu — cẩn thận "trôi" ngân sách.`,
+  bh_subs:(p,a)=>`Gói định kỳ chiếm ${p}% thu nhập (${fmt(a)}/tháng) — rà soát gói ít dùng.`,
+  bh_none:'Không phát hiện thói quen xấu đáng kể — quá đỉnh!',
+  rc_limit:(n,x,s)=>`Đặt giới hạn "${n}" tối đa ${x} lần/tháng → tiết kiệm ~${fmt(s)}.`,
+  rc_wait:s=>`Áp dụng luật "đợi 24 giờ" cho mọi khoản ưu tiên thấp trên 100k → giảm ~${fmt(s)}/tháng.`,
+  rc_cap:(c,a)=>`Đặt trần danh mục ${c} ở mức ${fmt(a)} (giảm 15%) cho tháng tới.`,
+  rc_payself:a=>`Chuyển ngay ${fmt(a)} (20% thu nhập) vào tiết kiệm ngay ngày nhận tiền — "trả cho mình trước".`,
+  rc_subs:(n,a)=>`Rà soát ${n} gói định kỳ (${fmt(a)}/tháng) — huỷ gói không dùng 2 tuần qua.`,
+  rp_ready:'📊 Báo cáo 30 ngày đã sẵn sàng!', rep_lbl:x=>`"${x.note}" ${x.n} lần (${fmt(x.sum)})`,
+  wk_this:'Tuần này', wk_ago:n=>n+' tuần trước', ds_thu:'Thu', ds_chi:'Chi',
+  chat_title:'🤖 Huấn luyện viên tài chính PilotAI', chat_hint:'Hỏi mình về: số dư, tiết kiệm, chi tiêu, mục tiêu, đăng ký định kỳ, ngân sách…',
+  ph_chat:'VD: Làm sao để tiết kiệm hơn?', b_send:'Gửi ➤',
+  q1:'Số dư của tôi còn bao nhiêu?', q2:'Tôi có đạt mục tiêu tiết kiệm không?', q3:'Nên cắt giảm khoản nào?', q4:'Đăng ký nào sắp đến hạn?', q5:'Gợi ý ngân sách tháng cho tôi',
+  mode_real:'🌐 AI thật (OpenAI)', mode_local:'📴 AI cục bộ', thinking:'Đang suy nghĩ…',
+  greeting:'Chào bạn! 👋 Mình là PilotAI — huấn luyện viên tài chính bỏ túi. Hỏi mình về số dư, mục tiêu, đăng ký định kỳ, ngân sách hay mẹo tiết kiệm nhé!',
+  api_fail:'⚠️ Không gọi được API — đang dùng AI cục bộ',
+  e_chat_empty:'✍️ Nhập câu hỏi trước đã nhé!',
+  set_open:'Cài đặt AI', set_title:'⚙️ Cài đặt AI (OpenAI)',
+  set_note:'Dán OpenAI API key để chatbot trả lời bằng AI thật. Key chỉ lưu trên máy bạn (localStorage), không gửi đi đâu khác ngoài OpenAI.',
+  set_key_lbl:'🔑 API key', set_model_lbl:'🧠 Model', set_save:'💾 Lưu', set_clear:'🗑️ Xoá key', set_close:'Đóng',
+  set_saved:'✅ Đã lưu API key — chatbot sẽ dùng AI thật!', set_cleared:'🗑️ Đã xoá key — quay về AI cục bộ',
+  key_on:m=>'Trạng thái: ĐANG DÙNG AI THẬT ('+m+')', key_off:'Trạng thái: chưa có key — dùng AI cục bộ',
+  e_key:'😅 Key không hợp lệ — thường bắt đầu bằng "sk-"',
+  music_t:'Bật/tắt nhạc nền', dark_t:'Chế độ sáng/tối',
+  music_on:'🎶 Nhạc nền đã bật', music_off:'🔇 Đã tắt nhạc nền',
+  e_bal:'😅 Bạn ơi, hãy nhập Số dư hiện tại hợp lệ (≥ 0) nhé!', e_neg:'😅 Khoản thu/chi không thể là số âm nha!',
+  e_days:'📅 Hãy cho mình biết còn bao nhiêu ngày đến kỳ nhận tiền (≥ 1)!', e_goal:'🎯 Mục tiêu tiết kiệm phải ≥ 0 nha!',
+  e_amt:'😅 Số tiền phải lớn hơn 0 nhé!', e_subname:'😅 Nhập tên dịch vụ nhé!', e_subamt:'😅 Giá gói phải lớn hơn 0!', e_subdate:'📅 Chọn ngày thanh toán tới nhé!',
+  no_note:'Không ghi chú', t_sorted:x=>'↕️ Đã sắp xếp theo '+x, t_deltx:'🗑️ Đã xoá giao dịch',
+  tx_added:(ty,a,n,c)=>(ty==='thu'?'📥 Đã thêm thu ':'📤 Đã thêm chi ')+fmt(a)+' — '+n+' ('+c+')',
+  today_in:'Khoản thu hôm nay', today_out:'Khoản chi hôm nay', voice_note:'Nhập bằng giọng nói', pay_note:n=>'Thanh toán '+n,
+  pt_analyze:'Phân tích tài chính', pt_badge:n=>'Huy hiệu '+n, pt_report:'Tạo báo cáo 30 ngày',
+  unlock_t:(i,n)=>'🎖️ Mở khoá huy hiệu: '+i+' '+n+'!',
+  goal_hit:'🎉 Tuyệt vời! Bạn đang trên đà ĐẠT mục tiêu tiết kiệm!',
+  listening:'🎤 Đang nghe… nói: "thêm chi 50 nghìn ăn sáng"', heard:x=>'🎤 Nghe được: "'+x+'"',
+  no_voice:'😅 Trình duyệt không hỗ trợ nhận giọng nói (thử Chrome nhé)', not_heard:'😅 Không nghe rõ, thử lại nhé',
+  not_understood:'🤔 Chưa hiểu, thử: "chi 50 nghìn ăn sáng"',
+  tts_none:'✨ Chưa có lời khuyên — hãy phân tích trước nhé!', tts_reading:'🔊 Đang đọc lời khuyên…',
+  need_analyze:'✨ Hãy bấm "Phân tích bằng AI" trước nhé!',
+  copy_ok:'📋 Đã sao chép báo cáo!', copy_err:'😅 Không sao chép được, thử tải văn bản nhé',
+  txt_ok:'📄 Đã tải báo cáo văn bản!', img_ok:'🖼️ Đã tải ảnh tổng quan!', img_err:'😅 Không xuất được ảnh',
+  welcome:'👋 Chào mừng đến Pocket PilotAI! Dữ liệu mẫu 60 ngày đã sẵn sàng.',
+  lang_sw:'🌐 Đã chuyển sang Tiếng Việt',
+  insight_pre:'🤖 <strong>AI Insight:</strong> ',
+  wn_out:(s,d)=>`Nguy cơ vượt chi! Với nhịp hiện tại (kể cả ${fmt(s)} định kỳ sắp trừ), bạn sẽ <strong>hết tiền trước kỳ nhận</strong> ~${d} ngày. Giảm chi ngay hôm nay!`,
+  wn_over:(a,l)=>`Bạn đang chi <strong>${fmt(a)}/ngày</strong> — vượt hạn mức an toàn ${fmt(l)}/ngày nếu muốn đạt mục tiêu. Khả năng cao sẽ vượt chi!`,
+  wn_ok:(dl,d)=>`Ổn định! Tiền đủ dùng ~${dl} ngày, dư cho ${d} ngày tới kể cả các gói định kỳ.`,
+  wn_big:(e,r)=>`Hôm nay bạn chi <strong>${fmt(e)}</strong> — gấp ${r} lần mức trung bình.`,
+  wn_sub:(n,a,d,dt)=>`<strong>${n}</strong> sẽ trừ ${fmt(a)} sau ${d} ngày (${dt}).`,
+  plan:(l,d,i,ne,wa,sa,p,s)=>`📋 <strong>Kế hoạch AI đề xuất:</strong><br>• Hạn mức chi an toàn: <strong>${fmt(l)}/ngày</strong> trong ${d} ngày tới.<br>• Ngân sách tháng (50/30/20 theo thu nhập ${fmt(i)}): thiết yếu <strong>${fmt(ne)}</strong> · mong muốn <strong>${fmt(wa)}</strong> · tiết kiệm <strong>${fmt(sa)}</strong>.<br>• Dòng tiền dự báo cuối kỳ: <strong>${fmt(p)}</strong> (đã trừ ${fmt(s)} định kỳ).`,
+  adv_danger:(a,s)=>`Mình khá lo đấy! Với nhịp chi <strong>${fmt(a)}/ngày</strong> cộng ${fmt(s)} định kỳ sắp trừ, ví của bạn sẽ cạn trước kỳ nhận tiền. Hãy bật "chế độ sinh tồn": chỉ chi cho thiết yếu, hoãn mọi mua sắm.`,
+  adv_hit:(p,g)=>`Xuất sắc! 🎉 Giữ nhịp này thì cuối kỳ bạn còn <strong>${fmt(p)}</strong> — vượt mục tiêu ${fmt(g)}. Bạn đang lái ví tiền như phi công lão luyện!`,
+  adv_push:(g,n,p)=>`Bạn đi đúng hướng nhưng cần tăng tốc: muốn đạt mục tiêu <strong>${fmt(g)}</strong>, hãy giảm chi thêm <strong>${fmt(n)}/ngày</strong> (dự kiến cuối kỳ hiện còn ${fmt(p)}).`,
+  adv_safe:(b,a)=>`Tài chính đang an toàn với ${fmt(b)} trong ví và nhịp chi ${fmt(a)}/ngày.`,
+  adv_rep:(n,x,s)=>`Mình phát hiện thói quen lặp lại: <strong>${n}</strong> xuất hiện ${x} lần trong 30 ngày, tốn ${fmt(s)}. Giảm một nửa là bạn giữ lại được ${fmt(s/2)} mỗi tháng đó!`,
+  adv_low:s=>`Nhóm chi <em>ưu tiên thấp</em> 30 ngày qua ngốn <strong>${fmt(s)}</strong> — đây là ứng viên số 1 để cắt giảm.`,
+  adv_streak:n=>`Chuỗi ${n} ngày theo dõi chi tiêu rất đáng nể — thói quen nhỏ, kết quả lớn! 🔥`,
+  lr_bal:(b,a,d)=>`Số dư hiện tại của bạn là <strong>${fmt(b)}</strong>. Với nhịp chi ${fmt(a)}/ngày, số tiền này đủ dùng khoảng <strong>${d}</strong>. 💰`,
+  lr_goal_hit:(p,g)=>`Tin vui! 🎉 Dự kiến cuối kỳ bạn còn ${fmt(p)} — <strong>vượt</strong> mục tiêu ${fmt(g)}. Giữ phong độ nhé!`,
+  lr_goal_miss:(p,l,d)=>`Dự kiến cuối kỳ còn ${fmt(p)}, thiếu ${fmt(l)} so với mục tiêu. Thử giảm ${fmt(d)}/ngày — bắt đầu từ nhóm đồ uống xem sao!`,
+  lr_goal_none:'Bạn chưa đặt mục tiêu tiết kiệm — điền Ô 5 ở tab Tổng quan nhé! 🎯',
+  lr_subs_due:(k,list,tt)=>`Trong 7 ngày tới có ${k} gói đến hạn: ${list}. Tổng định kỳ của bạn là ${fmt(tt)}/tháng — rà lại gói nào 2 tuần chưa mở nhé! 🔔`,
+  lr_subs_item:(ic,n,a,d)=>`<strong>${ic} ${n}</strong> (${fmt(a)}, còn ${d} ngày)`,
+  lr_subs_none:tt=>`Không có gói nào đến hạn trong 7 ngày tới. Tổng định kỳ: ${fmt(tt)}/tháng. ✅`,
+  lr_budget:(i,l)=>`Theo thu nhập 30 ngày (${fmt(i)}), AI gợi ý ngân sách 50/30/20: thiết yếu <strong>${fmt(i*.5)}</strong>, mong muốn <strong>${fmt(i*.3)}</strong>, tiết kiệm <strong>${fmt(i*.2)}</strong>. Hạn mức an toàn hiện tại: <strong>${fmt(l)}/ngày</strong>. 📋`,
+  lr_cut_rep:(n,x,s,lo,tot)=>`Mình soi thấy <strong>"${n}"</strong> lặp ${x} lần trong 30 ngày, ngốn ${fmt(s)}. Cộng thêm ${fmt(lo)} nhóm ưu tiên thấp. Cắt 50% hai nhóm này = giữ lại ~${fmt(tot)}/tháng! ✂️`,
+  lr_cut_low:s=>`Nhóm chi ưu tiên thấp 30 ngày qua là ${fmt(s)} — ứng viên số 1 để cắt. ✂️`,
+  lr_cut_none:'Chi tiêu của bạn khá kỷ luật, không thấy khoản thừa rõ rệt! 👏',
+  lr_report:'Bạn vào tab <strong>📊 Báo cáo AI</strong> và bấm "Tạo báo cáo 30 ngày" — mình sẽ phân tích đầy đủ thu chi, danh mục, so sánh tháng trước, thói quen và khuyến nghị nhé!',
+  lr_tips:'Mẹo của mình: ① Quy tắc 50/30/20. ② Đợi 24 giờ trước khi mua món > 200k. ③ "Trả cho mình trước" — chuyển 20% thu nhập vào tiết kiệm ngay ngày nhận. ④ Rà gói định kỳ mỗi tháng. ⑤ Ghi chép MỖI NGÀY — bạn đang làm rất tốt! 🌱',
+  lr_spend:(m,w,a,over)=>`30 ngày qua bạn chi <strong>${fmt(m)}</strong> (tuần này ${fmt(w)}, trung bình ${fmt(a)}/ngày). ${over?'Lưu ý: chi đang vượt thu! ⚠️':'Vẫn trong tầm kiểm soát! ✅'}`,
+  lr_hello:'Chào bạn! 👋 Mình là PilotAI — huấn luyện viên tài chính bỏ túi. Hỏi mình về số dư, mục tiêu, đăng ký định kỳ, ngân sách hay mẹo tiết kiệm nhé!',
+  lr_default:'Câu hỏi hay đó! Mình trả lời tốt nhất các chủ đề: <em>số dư, chi tiêu, mục tiêu tiết kiệm, khoản nên cắt, đăng ký định kỳ, ngân sách, báo cáo</em>. Bạn thử hỏi theo hướng đó nhé! 😊',
+  footer:'💗 Pocket PilotAI v3 — huấn luyện viên tài chính bỏ túi của bạn',
+  sys_prompt:'Bạn là PilotAI — huấn luyện viên tài chính cá nhân thân thiện, trả lời NGẮN GỌN bằng tiếng Việt có dấu, đưa lời khuyên hành động cụ thể dựa trên dữ liệu được cung cấp.'
+},
+en: {
+  tab_home:'🏠 Overview', tab_tx:'📒 Transactions', tab_subs:'🔄 Subscriptions', tab_report:'📊 AI Report', tab_ai:'🤖 Assistant',
+  f_title:'✍️ Enter your financial data',
+  l1:'💰 Field 1 — Current balance (VND)', l2:'📥 Field 2 — Income today (VND)', l3:'📤 Field 3 — Expense today (VND)',
+  l4:'📅 Field 4 — Days until your next payday', l5:'🎯 Field 5 — Savings goal (VND)',
+  ph1:'e.g. 2800000', ph2:'e.g. 200000', ph3:'e.g. 120000', ph4:'e.g. 12', ph5:'e.g. 1000000',
+  p1:'🍜 30k breakfast', p2:'🍱 50k lunch', p3:'🧋 25k bubble tea', p4:'⛽ 100k fuel', p5:'💵 +500k income',
+  analyze:'✨ Analyze with AI', mic_t:'Say: “spend 50k on breakfast”',
+  mic_tip:'💡 Tip: tap 🎤 and say “spend 50 thousand on breakfast” — the app logs & categorizes it!',
+  s_bal:'💰 Current balance', s_inc:'📥 Weekly income', s_exp:'📤 Weekly spending', s_proj:'🏁 Projected end balance',
+  pr_title:'🔮 AI Prediction & Plan', pr_avg:'Average spend / day', pr_days:'Money lasts for',
+  days_u:n=>n+' days',
+  insight_default:'👋 Enter your data and hit <strong>“Analyze with AI”</strong> to get advice!',
+  b_tts:'🔊 Read advice', b_copy:'📋 Copy', b_txt:'📄 Download text', b_img:'🖼️ Download image',
+  r_title:'⭕ Goal progress rings', r_goal:'Savings goal', r_week:'Weekly budget used', r_day:'Daily limit used',
+  c_title:'🏆 Challenges',
+  c_daily:'☀️ <strong>Today:</strong> spend under 200,000 ₫ <span class="muted">(+30pts)</span>',
+  c_weekly:'🗓️ <strong>This week:</strong> total under 1,500,000 ₫ <span class="muted">(+50pts)</span>',
+  c_wait:'⏳ Pending', c_ok:'✅ On track!', c_over:v=>'❌ Over ('+fmt(v)+')',
+  a_title:'🎖️ Achievement badges',
+  ach:{first:['First step','Add your first transaction'],streak3:['Consistent','3-day streak'],analyst:['Analyst','Run AI analysis 5 times'],goal:['Goal getter','On track to hit savings goal'],daily:['Daily discipline','Complete the daily challenge'],weekly:['Week keeper','Complete the weekly challenge'],lv3:['Pro saver','Reach level 3'],report:['Auditor','Generate a 30-day report']},
+  lvl:n=>'⭐ Level '+n, streak:n=>'🔥 '+n+(n>1?' days':' day'), pts:n=>'💎 '+n+' pts',
+  tx_title:'📒 Transaction log', tx_hint:'(AI auto-categorizes)', sort_lbl:'Sort by:',
+  sort_date:'📅 Date', sort_amt:'💵 Amount', sort_pri:'⚡ Priority', tx_30d:'Showing last 30 days',
+  th_date:'Date', th_type:'Type', th_note:'Description', th_cat:'Category', th_amt:'Amount', th_pri:'Priority',
+  tag_thu:'In', tag_chi:'Out', pri3:'🔴 High', pri2:'🟡 Mid', pri1:'⚪ Low',
+  add_title:'➕ Quick add transaction', opt_chi:'📤 Expense', opt_thu:'📥 Income',
+  ph_amt:'Amount (VND)', ph_note:'Description (e.g. lunch)', opt_p3:'🔴 High priority', opt_p2:'🟡 Medium', opt_p1:'⚪ Low', b_add:'Add ✓',
+  sub_total:'🔄 Total recurring / month', sub_due7:'📆 Due within 7 days',
+  subs_title:'🔄 Your subscriptions', th_service:'Service', th_price:'Price / mo', th_next:'Next payment', th_left:'Time left',
+  due_today:'Today!', due_over:'Overdue!', due_left:n=>n+' days left', b_paid:'✓ Paid',
+  sub_add_title:'➕ Add a subscription', ph_subname:'Service name (e.g. Netflix)', ph_subamt:'Price / month (VND)',
+  sub_note:'🔔 The app reminds you ≤ 5 days before payment and includes it in cash-flow forecasts.',
+  sub_paid:(n,d)=>'✅ Payment logged for '+n+' — next due '+d, sub_added:n=>'🔄 Added '+n+'!', sub_del:'🗑️ Subscription removed',
+  sub_remind:(ic,n,a,when)=>`🔔 <span><strong>${ic} ${n}</strong> will charge <strong>${fmt(a)}</strong> ${when}. Double-check you still use it!</span>`,
+  sub_today:'<strong>today</strong>', sub_in:(d,dt)=>`in <strong>${d} days</strong> (${dt})`,
+  sub_toast:(n,d,a)=>`🔔 ${n}: ${d} days until ${fmt(a)} is charged`,
+  rp_title:'📊 30-Day Financial Report — analyzed by AI',
+  rp_desc:'AI reviews all transactions from the last 30 days, compares with the previous 30, detects patterns and gives personalized recommendations.',
+  rp_btn:'🧠 Generate 30-day report', rp_copy:'📋 Copy report', rp_cat_title:'🍩 Spending by category',
+  rp_week_title:'📊 Income – Spending, last 4 weeks', rp_result:'📋 Analysis results',
+  rp1:'1️⃣ 30-day overview', rp2:'2️⃣ Spending by category', rp3:'3️⃣ Biggest spending', rp4:'4️⃣ vs. previous month',
+  rp5:'5️⃣ Positive habits', rp6:'6️⃣ Habits to fix', rp7:'7️⃣ AI action recommendations',
+  rp_inc:'📥 Total income', rp_exp:'📤 Total spending', rp_diff:'💰 Net', rp_save:'✂️ Potential savings',
+  rp_bigcat:(c,a,p)=>`🏔️ <span>Biggest category: <strong>${c}</strong> at ${a} (${p}% of spending).</span>`,
+  rp_bigtx:(n,a,d)=>`💸 <span>Largest single expense: <strong>${n}</strong> — ${a} (${d}).</span>`,
+  rp_chi:(up,p,a,b)=>`${up?'📕':'📗'} <span>Spending: <strong>${up?'up':'down'} ${p}%</strong> (${a} → ${b}).</span>`,
+  rp_thu:(up,p,a,b)=>`${up?'📗':'📕'} <span>Income: <strong>${up?'up':'down'} ${p}%</strong> (${a} → ${b}).</span>`,
+  rp_trend:(up,p)=>`${up?'📈':'📉'} <span>In-month trend: second half ${up?'up':'down'} ${p}% vs first half.</span>`,
+  gh_log:d=>`Logged expenses ${d}/30 days — the golden habit of money management.`,
+  gh_flow:(t,c)=>`Income (${fmt(t)}) still exceeds spending (${fmt(c)}) — positive cash flow.`,
+  gh_streak:n=>`${n}-day app streak — great discipline!`,
+  gh_start:'You started tracking your money — the most important first step!',
+  bh_repeat:l=>`Frequent repeat purchases: ${l}.`,
+  bh_lowpri:(p,s)=>`${p}% of spending is low-priority (${fmt(s)}) — easy to cut, not yet cut.`,
+  bh_trend:p=>`Spending rose ${p}% in the second half of the month — watch out for budget drift.`,
+  bh_subs:(p,a)=>`Subscriptions take ${p}% of income (${fmt(a)}/mo) — review unused ones.`,
+  bh_none:'No notable bad habits found — amazing!',
+  rc_limit:(n,x,s)=>`Cap "${n}" at ${x} times/month → save ~${fmt(s)}.`,
+  rc_wait:s=>`Apply the "24-hour rule" to low-priority buys over 100k → cut ~${fmt(s)}/month.`,
+  rc_cap:(c,a)=>`Set a ${c} category cap of ${fmt(a)} (−15%) next month.`,
+  rc_payself:a=>`Move ${fmt(a)} (20% of income) into savings on payday — "pay yourself first".`,
+  rc_subs:(n,a)=>`Review your ${n} subscriptions (${fmt(a)}/mo) — cancel any unused for 2 weeks.`,
+  rp_ready:'📊 Your 30-day report is ready!', rep_lbl:x=>`"${x.note}" ×${x.n} (${fmt(x.sum)})`,
+  wk_this:'This week', wk_ago:n=>n+'w ago', ds_thu:'Income', ds_chi:'Spending',
+  chat_title:'🤖 PilotAI Financial Coach', chat_hint:'Ask me about: balance, savings, spending, goals, subscriptions, budget…',
+  ph_chat:'e.g. How can I save more?', b_send:'Send ➤',
+  q1:'How much money do I have left?', q2:'Will I hit my savings goal?', q3:'What should I cut?', q4:'Which subscriptions are due soon?', q5:'Suggest a monthly budget',
+  mode_real:'🌐 Real AI (OpenAI)', mode_local:'📴 Local AI', thinking:'Thinking…',
+  greeting:'Hi! 👋 I\'m PilotAI — your pocket financial coach. Ask me about your balance, goals, subscriptions, budget or saving tips!',
+  api_fail:'⚠️ API call failed — using local AI',
+  e_chat_empty:'✍️ Type a question first!',
+  set_open:'AI settings', set_title:'⚙️ AI Settings (OpenAI)',
+  set_note:'Paste your OpenAI API key so the chatbot answers with real AI. The key is stored only on your device (localStorage) and sent only to OpenAI.',
+  set_key_lbl:'🔑 API key', set_model_lbl:'🧠 Model', set_save:'💾 Save', set_clear:'🗑️ Remove key', set_close:'Close',
+  set_saved:'✅ API key saved — chatbot now uses real AI!', set_cleared:'🗑️ Key removed — back to local AI',
+  key_on:m=>'Status: USING REAL AI ('+m+')', key_off:'Status: no key — using local AI',
+  e_key:'😅 Invalid key — it usually starts with "sk-"',
+  music_t:'Toggle background music', dark_t:'Light/dark mode',
+  music_on:'🎶 Music on', music_off:'🔇 Music off',
+  e_bal:'😅 Please enter a valid current balance (≥ 0)!', e_neg:'😅 Income/expense can\'t be negative!',
+  e_days:'📅 Tell me how many days until your next payday (≥ 1)!', e_goal:'🎯 Savings goal must be ≥ 0!',
+  e_amt:'😅 Amount must be greater than 0!', e_subname:'😅 Enter a service name!', e_subamt:'😅 Price must be greater than 0!', e_subdate:'📅 Pick the next payment date!',
+  no_note:'No description', t_sorted:x=>'↕️ Sorted by '+x, t_deltx:'🗑️ Transaction deleted',
+  tx_added:(ty,a,n,c)=>(ty==='thu'?'📥 Income added ':'📤 Expense added ')+fmt(a)+' — '+n+' ('+c+')',
+  today_in:'Income today', today_out:'Expense today', voice_note:'Added by voice', pay_note:n=>'Payment: '+n,
+  pt_analyze:'Financial analysis', pt_badge:n=>'Badge: '+n, pt_report:'30-day report',
+  unlock_t:(i,n)=>'🎖️ Badge unlocked: '+i+' '+n+'!',
+  goal_hit:'🎉 Awesome! You\'re on track to HIT your savings goal!',
+  listening:'🎤 Listening… say: "spend 50 thousand on breakfast"', heard:x=>'🎤 Heard: "'+x+'"',
+  no_voice:'😅 Your browser doesn\'t support speech recognition (try Chrome)', not_heard:'😅 Didn\'t catch that, try again',
+  not_understood:'🤔 Not understood, try: "spend 50 thousand on breakfast"',
+  tts_none:'✨ No advice yet — run the analysis first!', tts_reading:'🔊 Reading advice…',
+  need_analyze:'✨ Hit "Analyze with AI" first!',
+  copy_ok:'📋 Report copied!', copy_err:'😅 Copy failed, try downloading the text',
+  txt_ok:'📄 Text report downloaded!', img_ok:'🖼️ Overview image downloaded!', img_err:'😅 Image export failed',
+  welcome:'👋 Welcome to Pocket PilotAI! 60 days of sample data are loaded.',
+  lang_sw:'🌐 Switched to English',
+  insight_pre:'🤖 <strong>AI Insight:</strong> ',
+  wn_out:(s,d)=>`Overspend risk! At the current pace (incl. ${fmt(s)} upcoming subscriptions), you'll <strong>run out of money before payday</strong>, ~${d} days short. Cut spending today!`,
+  wn_over:(a,l)=>`You're spending <strong>${fmt(a)}/day</strong> — above the safe limit of ${fmt(l)}/day for your goal. High chance of overspending!`,
+  wn_ok:(dl,d)=>`Stable! Your money lasts ~${dl} days, covering the next ${d} days including subscriptions.`,
+  wn_big:(e,r)=>`Today you spent <strong>${fmt(e)}</strong> — ${r}× your daily average.`,
+  wn_sub:(n,a,d,dt)=>`<strong>${n}</strong> will charge ${fmt(a)} in ${d} days (${dt}).`,
+  plan:(l,d,i,ne,wa,sa,p,s)=>`📋 <strong>AI suggested plan:</strong><br>• Safe daily limit: <strong>${fmt(l)}/day</strong> for the next ${d} days.<br>• Monthly budget (50/30/20 of ${fmt(i)} income): needs <strong>${fmt(ne)}</strong> · wants <strong>${fmt(wa)}</strong> · savings <strong>${fmt(sa)}</strong>.<br>• Forecast end balance: <strong>${fmt(p)}</strong> (after ${fmt(s)} subscriptions).`,
+  adv_danger:(a,s)=>`I'm worried! At <strong>${fmt(a)}/day</strong> plus ${fmt(s)} in upcoming subscriptions, your wallet runs dry before payday. Switch to "survival mode": essentials only, pause all shopping.`,
+  adv_hit:(p,g)=>`Excellent! 🎉 Keep this pace and you'll end with <strong>${fmt(p)}</strong> — beating your ${fmt(g)} goal. You're flying this wallet like a pro pilot!`,
+  adv_push:(g,n,p)=>`You're on the right track but need a push: to hit <strong>${fmt(g)}</strong>, cut an extra <strong>${fmt(n)}/day</strong> (currently projected: ${fmt(p)}).`,
+  adv_safe:(b,a)=>`Finances look safe with ${fmt(b)} in your wallet and ${fmt(a)}/day spending.`,
+  adv_rep:(n,x,s)=>`I spotted a repeat habit: <strong>${n}</strong> appeared ${x} times in 30 days, costing ${fmt(s)}. Halving it keeps ${fmt(s/2)} in your pocket monthly!`,
+  adv_low:s=>`Low-priority spending ate <strong>${fmt(s)}</strong> in 30 days — cut candidate #1.`,
+  adv_streak:n=>`A ${n}-day tracking streak — small habit, big results! 🔥`,
+  lr_bal:(b,a,d)=>`Your current balance is <strong>${fmt(b)}</strong>. At ${fmt(a)}/day it lasts about <strong>${d}</strong>. 💰`,
+  lr_goal_hit:(p,g)=>`Good news! 🎉 Projected end balance ${fmt(p)} — <strong>beats</strong> your ${fmt(g)} goal. Keep it up!`,
+  lr_goal_miss:(p,l,d)=>`Projected end balance ${fmt(p)}, ${fmt(l)} short of your goal. Try cutting ${fmt(d)}/day — start with drinks!`,
+  lr_goal_none:'You haven\'t set a savings goal — fill Field 5 on the Overview tab! 🎯',
+  lr_subs_due:(k,list,tt)=>`${k} subscription(s) due within 7 days: ${list}. Total recurring: ${fmt(tt)}/mo — review any you haven't opened in 2 weeks! 🔔`,
+  lr_subs_item:(ic,n,a,d)=>`<strong>${ic} ${n}</strong> (${fmt(a)}, ${d} days)`,
+  lr_subs_none:tt=>`Nothing due within 7 days. Total recurring: ${fmt(tt)}/mo. ✅`,
+  lr_budget:(i,l)=>`Based on 30-day income (${fmt(i)}), AI suggests 50/30/20: needs <strong>${fmt(i*.5)}</strong>, wants <strong>${fmt(i*.3)}</strong>, savings <strong>${fmt(i*.2)}</strong>. Current safe limit: <strong>${fmt(l)}/day</strong>. 📋`,
+  lr_cut_rep:(n,x,s,lo,tot)=>`I see <strong>"${n}"</strong> repeated ${x} times in 30 days, costing ${fmt(s)}. Plus ${fmt(lo)} of low-priority buys. Cut both by 50% = keep ~${fmt(tot)}/month! ✂️`,
+  lr_cut_low:s=>`Low-priority spending in the last 30 days: ${fmt(s)} — cut candidate #1. ✂️`,
+  lr_cut_none:'Your spending is disciplined — no obvious excess! 👏',
+  lr_report:'Go to the <strong>📊 AI Report</strong> tab and hit "Generate 30-day report" — full breakdown, month comparison, habits and recommendations!',
+  lr_tips:'My tips: ① The 50/30/20 rule. ② Wait 24h before buying anything > 200k. ③ "Pay yourself first" — move 20% of income to savings on payday. ④ Review subscriptions monthly. ⑤ Log EVERY DAY — you\'re doing great! 🌱',
+  lr_spend:(m,w,a,over)=>`Last 30 days you spent <strong>${fmt(m)}</strong> (this week ${fmt(w)}, avg ${fmt(a)}/day). ${over?'Note: spending exceeds income! ⚠️':'Still under control! ✅'}`,
+  lr_hello:'Hi! 👋 I\'m PilotAI — your pocket financial coach. Ask me about balance, goals, subscriptions, budget or saving tips!',
+  lr_default:'Good question! I\'m best at: <em>balance, spending, savings goals, what to cut, subscriptions, budget, reports</em>. Try one of those! 😊',
+  footer:'💗 Pocket PilotAI v3 — your pocket financial coach',
+  sys_prompt:'You are PilotAI — a friendly personal finance coach. Reply BRIEFLY in English with concrete, actionable advice based on the provided data.'
+}};
+const t=(k,...a)=>{ const v=(I18N[lang]&&I18N[lang][k])??I18N.vi[k]??k; return typeof v==='function'?v(...a):v; };
+
+/* Áp dụng ngôn ngữ cho toàn bộ phần tĩnh */
+function applyLang(){
+  document.documentElement.lang = lang==='vi'?'vi':'en';
+  $('langBtn').textContent = lang==='vi'?'EN':'VI';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.innerHTML=t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder=t(el.dataset.i18nPh); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title=t(el.dataset.i18nTitle); });
+  $('dailyStatus').textContent=t('c_wait'); $('weeklyStatus').textContent=t('c_wait');
+  if(!state.lastSummary) $('insightBox').innerHTML=t('insight_default');
+  updateHeaderBadges(); renderAch(); renderTx(); renderSubs(); updateAiMode(); refreshKeyStatus();
+}
+
+/* ---------- DANH MỤC & AI PHÂN LOẠI ---------- */
+const CATS = {
+  'Ăn uống':          {icon:'🍜', kw:['ăn','phở','cơm','bún','bánh','trưa','sáng','tối','nhậu','food','đồ ăn','lẩu','quán','breakfast','lunch','dinner','meal']},
+  'Đồ uống':          {icon:'🧋', kw:['trà sữa','cà phê','cafe','coffee','nước ép','sinh tố','trà chanh','bubble tea','juice','drink']},
+  'Di chuyển':        {icon:'🛵', kw:['xăng','grab','taxi','bus','xe','gửi xe','vé tàu','vé xe','fuel','gas','uber','ride']},
+  'Mua sắm':          {icon:'🛍️', kw:['áo','quần','giày','mua','sắm','mỹ phẩm','phụ kiện','shirt','shoes','shopping','clothes']},
+  'Giải trí':         {icon:'🎮', kw:['phim','game','nhạc','chơi','karaoke','vé xem','movie','music','concert']},
+  'Hoá đơn & Đăng ký':{icon:'🧾', kw:['điện','nước','internet','wifi','thuê nhà','netflix','spotify','youtube','chatgpt','premium','đăng ký','gói','rent','bill','subscription','payment','thanh toán']},
+  'Học tập':          {icon:'📚', kw:['sách','học','khoá','khóa','lớp','book','course','class']},
+  'Khác':             {icon:'📦', kw:[]}
+};
+const CAT_EN={'Ăn uống':'Food','Đồ uống':'Drinks','Di chuyển':'Transport','Mua sắm':'Shopping','Giải trí':'Entertainment','Hoá đơn & Đăng ký':'Bills & Subs','Học tập':'Education','Khác':'Other','Thu nhập':'Income'};
+function categorize(note){
+  const s=(note||'').toLowerCase();
+  for(const [name,c] of Object.entries(CATS)){ if(c.kw.some(k=>s.includes(k))) return name; }
+  return 'Khác';
+}
+const catIcon = c => (CATS[c]||{icon:'💵'}).icon;
+const catName = c => lang==='en' ? (CAT_EN[c]||c) : c;
+
+/* ---------- TRẠNG THÁI ---------- */
+let state = {
+  transactions: [], subs: [],
+  points:0, streak:1, analyzeCount:0,
+  sortKey:'date', sortAsc:false,
+  lastAdvice:'', lastSummary:'', lastReportText:'',
+  goalReached:false, ach:{}, reportBuilt:false
+};
+
+/* ---------- HUY HIỆU ---------- */
+const ACH_IDS=[['first','🥇'],['streak3','🔥'],['analyst','🧠'],['goal','🎯'],['daily','✂️'],['weekly','🛡️'],['lv3','💎'],['report','📊']];
+function renderAch(){
+  $('achGrid').innerHTML = ACH_IDS.map(([id,ic])=>{
+    const [nm,ds]=t('ach')[id];
+    return `<div class="ach ${state.ach[id]?'unlocked':'locked'}" id="ach-${id}"><span class="ic">${ic}</span><div class="nm">${nm}</div><div class="ds">${ds}</div></div>`;
+  }).join('');
+}
+function unlock(id, silent=false){
+  if(state.ach[id]) return;
+  state.ach[id]=true; saveGame(); renderAch();
+  if(silent) return;
+  const rec=ACH_IDS.find(x=>x[0]===id), nm=t('ach')[id][0];
+  const el=$('ach-'+id); if(el) bounceEl(el.querySelector('.ic'));
+  toast(t('unlock_t',rec[1],nm),'ok'); ting();
+  confetti({particleCount:60,spread:55,origin:{y:.5},colors:['#EC4899','#C084FC','#84CC16']});
+  addPoints(25,t('pt_badge',nm),false);
+}
+
+/* ---------- DỮ LIỆU MẪU 60 NGÀY ---------- */
+function seeded(seed){ return ()=>{ seed=(seed*9301+49297)%233280; return seed/233280; }; }
+let txId=0;
+function loadSampleData(){
+  const rnd=seeded(42), pick=a=>a[Math.floor(rnd()*a.length)];
+  const foods=['Ăn sáng phở','Cơm trưa văn phòng','Bún chả tối','Bánh mì sáng','Ăn tối cùng bạn','Lẩu cuối tuần'];
+  const drinks=['Trà sữa','Cà phê','Nước ép cam'];
+  const moves=['Xăng xe','Grab đi làm','Gửi xe'];
+  const shops=['Mua áo mới','Mua giày','Mỹ phẩm','Phụ kiện điện thoại'];
+  const T=[];
+  for(let d=-59; d<=0; d++){
+    const recent=d>=-29;
+    T.push({id:++txId, date:todayISO(d), type:'chi', amount:25000+Math.round(rnd()*35000), note:pick(foods), priority:2});
+    if(rnd()<.55) T.push({id:++txId, date:todayISO(d), type:'chi', amount:20000+Math.round(rnd()*30000), note:pick(foods), priority:2});
+    if(rnd()<(recent?.75:.5)) T.push({id:++txId, date:todayISO(d), type:'chi', amount:18000+Math.round(rnd()*22000), note:pick(drinks), priority:1});
+    if(rnd()<.4) T.push({id:++txId, date:todayISO(d), type:'chi', amount:30000+Math.round(rnd()*70000), note:pick(moves), priority:3});
+    if(rnd()<(recent?.14:.10)) T.push({id:++txId, date:todayISO(d), type:'chi', amount:150000+Math.round(rnd()*250000), note:pick(shops), priority:1});
+  }
+  T.push({id:++txId, date:todayISO(-55), type:'thu', amount:4000000, note:'Nhận lương tháng trước', priority:3});
+  T.push({id:++txId, date:todayISO(-25), type:'thu', amount:4200000, note:'Nhận lương tháng này', priority:3});
+  T.push({id:++txId, date:todayISO(-18), type:'thu', amount:300000, note:'Bán sách cũ', priority:2});
+  T.push({id:++txId, date:todayISO(-6),  type:'thu', amount:250000, note:'Thưởng dự án nhỏ', priority:2});
+  T.forEach(x=>x.cat = x.type==='chi'?categorize(x.note):'Thu nhập');
+  state.transactions=T;
+  state.subs=[
+    {id:1, icon:'🎬', name:'Netflix',         amount:260000, nextDate:todayISO(3)},
+    {id:2, icon:'🤖', name:'ChatGPT Plus',    amount:520000, nextDate:todayISO(2)},
+    {id:3, icon:'🎵', name:'Spotify Premium', amount:59000,  nextDate:todayISO(9)},
+    {id:4, icon:'🎬', name:'YouTube Premium', amount:79000,  nextDate:todayISO(14)}
+  ];
+  $('inBalance').value=2800000; $('inIncome').value=0; $('inExpense').value=0;
+  $('inDays').value=10; $('inGoal').value=1200000;
+}
+
+/* ---------- ÂM THANH ---------- */
+let audioCtx=null, musicNodes=null;
+function actx(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function ting(){
+  try{
+    const c=actx(), tt=c.currentTime;
+    [880,1320].forEach((f,i)=>{
+      const o=c.createOscillator(), g=c.createGain();
+      o.frequency.value=f; o.type='sine';
+      g.gain.setValueAtTime(.18,tt+i*.08); g.gain.exponentialRampToValueAtTime(.001,tt+i*.08+.5);
+      o.connect(g); g.connect(c.destination); o.start(tt+i*.08); o.stop(tt+i*.08+.55);
+    });
+  }catch(e){}
+}
+function toggleMusic(){
+  try{
+    const c=actx();
+    if(musicNodes){ musicNodes.g.gain.linearRampToValueAtTime(0,c.currentTime+.5);
+      setTimeout(()=>{musicNodes.o.forEach(o=>o.stop()); musicNodes=null;},600);
+      $('musicBtn').textContent='🎵'; toast(t('music_off')); return; }
+    const g=c.createGain(); g.gain.value=0; g.connect(c.destination);
+    const notes=[261.6,329.6,392,523.3], o=[];
+    notes.forEach((f,i)=>{ const os=c.createOscillator(), og=c.createGain();
+      os.type='sine'; os.frequency.value=f; og.gain.value=.028;
+      const lfo=c.createOscillator(), lg=c.createGain();
+      lfo.frequency.value=.1+i*.05; lg.gain.value=.02; lfo.connect(lg); lg.connect(og.gain); lfo.start();
+      os.connect(og); og.connect(g); os.start(); o.push(os,lfo); });
+    g.gain.linearRampToValueAtTime(.9,c.currentTime+1.5);
+    musicNodes={o,g}; $('musicBtn').textContent='🎶'; toast(t('music_on'));
+  }catch(e){}
+}
+
+/* ---------- TOAST ---------- */
+function toast(msg,type='ok'){
+  const el=document.createElement('div'); el.className='toast '+type; el.textContent=msg;
+  $('toasts').appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(),500); },3800);
+}
+
+/* ---------- SỐ CHẠY ---------- */
+function countUp(el,target,isMoney=true){
+  const from=parseFloat(el.dataset.v||0), dur=900, t0=performance.now();
+  el.parentElement&&el.parentElement.classList.add('pop');
+  setTimeout(()=>el.parentElement&&el.parentElement.classList.remove('pop'),450);
+  function step(ts){
+    const p=Math.min(1,(ts-t0)/dur), e=1-Math.pow(1-p,3);
+    const v=from+(target-from)*e;
+    el.textContent=isMoney?fmt(v):Math.round(v).toLocaleString('vi-VN');
+    if(p<1) requestAnimationFrame(step); else el.dataset.v=target;
+  }
+  requestAnimationFrame(step);
+}
+function setRing(id,pct){
+  pct=Math.max(0,Math.min(100,pct||0));
+  $(id).style.strokeDashoffset=RING_C*(1-pct/100);
+  const el=$(id+'Pct'); el.textContent=Math.round(pct)+'%'; bounceEl(el);
+}
+
+/* ---------- GAME HOÁ ---------- */
+function updateHeaderBadges(){
+  $('ptsBadge').textContent=t('pts',state.points);
+  $('lvlBadge').textContent=t('lvl',Math.floor(state.points/100)+1);
+  $('streakBadge').textContent=t('streak',state.streak);
+}
+function addPoints(n,reason,notify=true){
+  state.points+=n; updateHeaderBadges();
+  bounceEl($('ptsBadge')); bounceEl($('lvlBadge'));
+  if(notify&&reason) toast('+'+n+' — '+reason,'ok');
+  if(Math.floor(state.points/100)+1>=3) unlock('lv3');
+  saveGame();
+}
+function loadGame(){
+  try{
+    const g=JSON.parse(store.get('ppai_game','{}'));
+    state.points=g.points||0; state.ach=g.ach||{}; state.analyzeCount=g.analyzeCount||0;
+    const last=g.lastDay, today=todayISO();
+    if(last===todayISO(-1)) state.streak=(g.streak||0)+1;
+    else if(last===today) state.streak=g.streak||1;
+    else state.streak=1;
+    saveGame();
+  }catch(e){ state.streak=1; }
+  updateHeaderBadges();
+  if(state.streak>=3) unlock('streak3',true);
+  renderAch();
+}
+function saveGame(){
+  store.set('ppai_game', JSON.stringify({points:state.points,streak:state.streak,lastDay:todayISO(),ach:state.ach,analyzeCount:state.analyzeCount}));
+}
+
+/* ---------- THỐNG KÊ ---------- */
+function rangeStats(from,to){
+  const a=todayISO(from), b=todayISO(to);
+  const tx=state.transactions.filter(x=>x.date>=a&&x.date<=b);
+  const thu=tx.filter(x=>x.type==='thu').reduce((s,x)=>s+x.amount,0);
+  const chi=tx.filter(x=>x.type==='chi').reduce((s,x)=>s+x.amount,0);
+  return {tx,thu,chi};
+}
+function weekStats(){
+  const r=rangeStats(-6,0);
+  const days=new Set(r.tx.filter(x=>x.type==='chi').map(x=>x.date)).size||1;
+  return {...r, avg:r.chi/days};
+}
+function byCategory(txList){
+  const m={};
+  txList.filter(x=>x.type==='chi').forEach(x=>{ m[x.cat]=(m[x.cat]||0)+x.amount; });
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]);
+}
+function detectPatterns(){
+  const tx=rangeStats(-29,0).tx.filter(x=>x.type==='chi');
+  const cnt={};
+  tx.forEach(x=>{ const k=x.note.toLowerCase(); cnt[k]=cnt[k]||{n:0,sum:0,note:x.note}; cnt[k].n++; cnt[k].sum+=x.amount; });
+  const repetitive=Object.values(cnt).filter(x=>x.n>=6).sort((a,b)=>b.sum-a.sum);
+  const lowPri=tx.filter(x=>x.priority===1);
+  return {repetitive, lowPri, lowSum:lowPri.reduce((s,x)=>s+x.amount,0)};
+}
+
+/* ---------- KIỂM TRA NHẬP ---------- */
+function readInputs(){
+  const bal=parseFloat($('inBalance').value);
+  if(isNaN(bal)||bal<0){ toast(t('e_bal'),'err'); $('inBalance').focus(); return null; }
+  const inc=parseFloat($('inIncome').value)||0, exp=parseFloat($('inExpense').value)||0;
+  if(inc<0||exp<0){ toast(t('e_neg'),'err'); return null; }
+  const days=parseInt($('inDays').value);
+  if(isNaN(days)||days<1){ toast(t('e_days'),'err'); $('inDays').focus(); return null; }
+  const goal=parseFloat($('inGoal').value)||0;
+  if(goal<0){ toast(t('e_goal'),'err'); return null; }
+  return {bal,inc,exp,days,goal};
+}
+
+/* ---------- PHÂN TÍCH BẰNG AI ----------
+   silent=true: chỉ vẽ lại giao diện (đổi ngôn ngữ / dark mode),
+   KHÔNG cộng điểm, không âm thanh, không confetti — tránh farm điểm. */
+function analyze(silent=false){
+  const inp=readInputs(); if(!inp) return;
+  let {bal,inc,exp,days,goal}=inp;
+
+  if(!silent){
+    if(inc>0) addTx('thu',inc,t('today_in'),2,false);
+    if(exp>0) addTx('chi',exp,t('today_out'),2,false);
+    bal=bal+inc-exp;
+    $('inBalance').value=bal; $('inIncome').value=''; $('inExpense').value='';
+  }
+
+  const ws=weekStats();
+  const subsDue=state.subs.filter(s=>{const d=daysUntil(s.nextDate);return d>=0&&d<=days;});
+  const subsDueSum=subsDue.reduce((s,x)=>s+x.amount,0);
+  const daysLast=ws.avg>0?bal/ws.avg:Infinity;
+  const projected=bal-ws.avg*days-subsDueSum;
+  const dailyLimit=Math.max(0,(bal-goal-subsDueSum)/days);
+  const m=rangeStats(-29,0);
+  const monthIncome=m.thu||4000000;
+
+  countUp($('stBalance'),bal); countUp($('stIncome'),ws.thu);
+  countUp($('stExpense'),ws.chi); countUp($('stProjected'),Math.max(projected,0));
+  countUp($('stAvg'),ws.avg);
+  $('stDaysLast').textContent=isFinite(daysLast)?t('days_u',Math.floor(daysLast)):'∞';
+  bounceEl($('stDaysLast'));
+
+  setRing('ringGoal', goal>0?projected/goal*100:100);
+  setRing('ringWeek', ws.chi/WEEK_BUDGET*100);
+  const chiToday=state.transactions.filter(x=>x.date===todayISO()&&x.type==='chi').reduce((s,x)=>s+x.amount,0);
+  setRing('ringDay', dailyLimit>0?chiToday/dailyLimit*100:100);
+
+  const W=$('warnings'); W.innerHTML='';
+  const warn=(cls,ic,txt)=>{ const d=document.createElement('div'); d.className='warnbox '+cls; d.innerHTML=ic+' <span>'+txt+'</span>'; W.appendChild(d); };
+  if(projected<0) warn('red','🚨',t('wn_out',subsDueSum,Math.max(1,Math.ceil(days-daysLast))));
+  else if(ws.avg>dailyLimit&&goal>0) warn('amber','⚠️',t('wn_over',ws.avg,dailyLimit));
+  else warn('green','✅',t('wn_ok',isFinite(daysLast)?Math.floor(daysLast):'∞',days));
+  if(exp>ws.avg*2&&exp>0) warn('amber','📉',t('wn_big',exp,(exp/ws.avg).toFixed(1)));
+  subsDue.filter(s=>daysUntil(s.nextDate)<=5).forEach(s=>warn('amber','🔔',t('wn_sub',s.name,s.amount,daysUntil(s.nextDate),dLabel(s.nextDate))));
+
+  const advice=buildAdvice(bal,ws,days,goal,projected,daysLast,subsDueSum);
+  $('insightBox').innerHTML=t('insight_pre')+advice;
+  state.lastAdvice=advice.replace(/<[^>]+>/g,'');
+
+  $('planBox').style.display='block';
+  $('planBox').innerHTML=t('plan',dailyLimit,days,monthIncome,monthIncome*.5,monthIncome*.3,monthIncome*.2,projected,subsDueSum);
+
+  if(goal>0&&projected>=goal){
+    if(!state.goalReached&&!silent){
+      confetti({particleCount:180,spread:80,origin:{y:.6},colors:['#EC4899','#C084FC','#84CC16','#10B981']});
+      setTimeout(()=>confetti({particleCount:120,angle:60,spread:60,origin:{x:0}}),300);
+      setTimeout(()=>confetti({particleCount:120,angle:120,spread:60,origin:{x:1}}),500);
+      toast(t('goal_hit'),'ok'); ting(); unlock('goal');
+    }
+    state.goalReached=true;
+  } else state.goalReached=false;
+
+  const dPct=Math.min(100,chiToday/DAILY_CHALLENGE*100);
+  $('dailyBar').style.width=dPct+'%';
+  if(chiToday<DAILY_CHALLENGE){ $('dailyStatus').textContent=t('c_ok'); $('dailyStatus').style.color='var(--green)'; unlock('daily',silent); }
+  else { $('dailyStatus').textContent=t('c_over',chiToday); $('dailyStatus').style.color='var(--red)'; }
+  const wPct=Math.min(100,ws.chi/WEEK_BUDGET*100);
+  $('weeklyBar').style.width=wPct+'%';
+  if(ws.chi<WEEK_BUDGET){ $('weeklyStatus').textContent=t('c_ok'); $('weeklyStatus').style.color='var(--green)'; unlock('weekly',silent); }
+  else { $('weeklyStatus').textContent=t('c_over',ws.chi); $('weeklyStatus').style.color='var(--red)'; }
+  if(!silent){ bounceEl($('dailyStatus')); bounceEl($('weeklyStatus')); }
+
+  state.lastSummary=
+`===== POCKET PILOTAI =====
+${new Date().toLocaleDateString(lang==='vi'?'vi-VN':'en-US')}
+${t('s_bal').replace(/^\S+ /,'')}: ${fmt(bal)}
+${t('s_inc').replace(/^\S+ /,'')}: ${fmt(ws.thu)}
+${t('s_exp').replace(/^\S+ /,'')}: ${fmt(ws.chi)}
+${t('pr_avg')}: ${fmt(ws.avg)}
+${t('pr_days')}: ${isFinite(daysLast)?t('days_u',Math.floor(daysLast)):'∞'}
+${t('s_proj').replace(/^\S+ /,'')}: ${fmt(projected)}
+${t('r_goal')}: ${fmt(goal)} → ${projected>=goal?'✅':'❌'}
+--- AI ---
+${state.lastAdvice}`;
+
+  if(!silent){
+    state.analyzeCount++;
+    if(state.analyzeCount>=5) unlock('analyst');
+    addPoints(20,t('pt_analyze'));
+    renderTx(); renderSubs(); ting();
+  }
+}
+
+/* ---------- AI LỜI KHUYÊN ---------- */
+function buildAdvice(bal,ws,days,goal,projected,daysLast,subsDueSum){
+  const p=[], pat=detectPatterns();
+  if(projected<0) p.push(t('adv_danger',ws.avg,subsDueSum));
+  else if(goal>0&&projected>=goal) p.push(t('adv_hit',projected,goal));
+  else if(goal>0) p.push(t('adv_push',goal,(goal-projected)/days,projected));
+  else p.push(t('adv_safe',bal,ws.avg));
+  if(pat.repetitive.length){ const r=pat.repetitive[0]; p.push(t('adv_rep',r.note,r.n,r.sum)); }
+  if(pat.lowSum>0) p.push(t('adv_low',pat.lowSum));
+  if(state.streak>=3) p.push(t('adv_streak',state.streak));
+  return p.join(' ');
+}
+
+/* ---------- GIAO DỊCH ---------- */
+function addTx(type,amount,note,priority=2,notify=true){
+  const cat=type==='chi'?categorize(note):'Thu nhập';
+  state.transactions.push({id:++txId, date:todayISO(), type, amount, note, priority, cat});
+  unlock('first', !notify);
+  if(notify){ toast(t('tx_added',type,amount,note,catName(cat)),'ok'); ting(); addPoints(10,null,false); renderTx(); }
+}
+function renderTx(){
+  const k=state.sortKey, asc=state.sortAsc?1:-1, limit=todayISO(-29);
+  const arr=state.transactions.filter(x=>x.date>=limit).sort((a,b)=>{
+    if(k==='amount') return (a.amount-b.amount)*asc;
+    if(k==='priority') return (a.priority-b.priority)*asc;
+    return (a.date<b.date?-1:1)*asc;
+  });
+  const pri={1:[t('pri1'),'pri-thap'],2:[t('pri2'),'pri-tb'],3:[t('pri3'),'pri-cao']};
+  $('txBody').innerHTML=arr.map(x=>`<tr>
+    <td>${dLabel(x.date)}</td>
+    <td><span class="tag ${x.type}">${x.type==='thu'?t('tag_thu'):t('tag_chi')}</span></td>
+    <td>${x.note}</td>
+    <td><span class="tag cat">${catIcon(x.cat)} ${catName(x.cat)}</span></td>
+    <td style="font-weight:700;color:${x.type==='thu'?'var(--teal)':'var(--pink)'}">${x.type==='thu'?'+':'−'}${fmt(x.amount)}</td>
+    <td class="${pri[x.priority][1]}">${pri[x.priority][0]}</td>
+    <td><button class="btn ghost small" onclick="delTx(${x.id})" aria-label="✕">🗑️</button></td>
+  </tr>`).join('');
+}
+function delTx(id){ state.transactions=state.transactions.filter(x=>x.id!==id); renderTx(); toast(t('t_deltx'),'warn'); }
+
+/* ---------- ĐĂNG KÝ ĐỊNH KỲ ---------- */
+let subId=100;
+function renderSubs(){
+  const total=state.subs.reduce((s,x)=>s+x.amount,0);
+  const due7=state.subs.filter(s=>{const d=daysUntil(s.nextDate);return d>=0&&d<=7;}).reduce((s,x)=>s+x.amount,0);
+  countUp($('subTotal'),total); countUp($('subDue7'),due7);
+  const rows=[...state.subs].sort((a,b)=>a.nextDate<b.nextDate?-1:1);
+  $('subBody').innerHTML=rows.map(s=>{
+    const d=daysUntil(s.nextDate);
+    const cls=d<=3?'due-soon':d<=7?'due-mid':'due-far';
+    const lbl=d<0?t('due_over'):d===0?t('due_today'):t('due_left',d);
+    return `<tr>
+      <td style="font-weight:700">${s.icon} ${s.name}</td>
+      <td style="font-weight:700;color:var(--pink)">${fmt(s.amount)}</td>
+      <td>${dLabel(s.nextDate)}</td>
+      <td><span class="tag ${cls}">${lbl}</span></td>
+      <td><button class="btn ghost small" onclick="paySub(${s.id})">${t('b_paid')}</button></td>
+      <td><button class="btn ghost small" onclick="delSub(${s.id})" aria-label="✕">🗑️</button></td>
+    </tr>`;
+  }).join('');
+  const R=$('subReminders'); R.innerHTML='';
+  state.subs.filter(s=>{const d=daysUntil(s.nextDate);return d>=0&&d<=5;})
+    .sort((a,b)=>daysUntil(a.nextDate)-daysUntil(b.nextDate))
+    .forEach(s=>{
+      const d=daysUntil(s.nextDate);
+      const div=document.createElement('div');
+      div.className='warnbox '+(d<=3?'red':'amber');
+      div.innerHTML=t('sub_remind',s.icon,s.name,s.amount, d===0?t('sub_today'):t('sub_in',d,dLabel(s.nextDate)));
+      R.appendChild(div);
+    });
+}
+function paySub(id){
+  const s=state.subs.find(x=>x.id===id); if(!s) return;
+  addTx('chi',s.amount,t('pay_note',s.name),3);
+  const d=new Date(s.nextDate); d.setMonth(d.getMonth()+1); s.nextDate=d.toISOString().slice(0,10);
+  renderSubs(); toast(t('sub_paid',s.name,dLabel(s.nextDate)),'ok');
+}
+function delSub(id){ state.subs=state.subs.filter(x=>x.id!==id); renderSubs(); toast(t('sub_del'),'warn'); }
+$('subAddBtn').onclick=()=>{
+  const name=$('subName').value.trim(), amt=parseFloat($('subAmount').value), date=$('subDate').value;
+  if(!name){ toast(t('e_subname'),'err'); $('subName').focus(); return; }
+  if(isNaN(amt)||amt<=0){ toast(t('e_subamt'),'err'); $('subAmount').focus(); return; }
+  if(!date){ toast(t('e_subdate'),'err'); $('subDate').focus(); return; }
+  state.subs.push({id:++subId, icon:$('subIcon').value, name, amount:amt, nextDate:date});
+  $('subName').value=''; $('subAmount').value=''; $('subDate').value='';
+  renderSubs(); toast(t('sub_added',name),'ok'); ting(); addPoints(10,null,false);
+};
+function checkSubReminders(){
+  state.subs.filter(s=>{const d=daysUntil(s.nextDate);return d>=0&&d<=5;}).forEach((s,i)=>{
+    setTimeout(()=>toast(t('sub_toast',s.icon+' '+s.name,daysUntil(s.nextDate),s.amount),'warn'),1500+i*900);
+  });
+}
+
+/* ---------- BÁO CÁO 30 NGÀY ----------
+   silent=true khi vẽ lại (đổi ngôn ngữ/dark mode) — không cộng điểm. */
+let catChart=null, weekChart=null;
+function buildReport(silent=false){
+  const cur=rangeStats(-29,0), prev=rangeStats(-59,-30);
+  const cats=byCategory(cur.tx), pat=detectPatterns();
+  const total=cur.chi||1;
+  const biggestCat=cats[0];
+  const biggestTx=cur.tx.filter(x=>x.type==='chi').sort((a,b)=>b.amount-a.amount)[0];
+  const chiDelta=prev.chi>0?((cur.chi-prev.chi)/prev.chi*100):0;
+  const thuDelta=prev.thu>0?((cur.thu-prev.thu)/prev.thu*100):0;
+  const h1=rangeStats(-29,-15).chi, h2=rangeStats(-14,0).chi;
+  const trendUp=h2>h1, trendPct=h1>0?Math.abs((h2-h1)/h1*100):0;
+  const subsMonthly=state.subs.reduce((s,x)=>s+x.amount,0);
+  const savePotential=pat.lowSum*.5+(pat.repetitive[0]?pat.repetitive[0].sum*.5:0);
+  const activeDays=new Set(cur.tx.map(x=>x.date)).size;
+
+  const good=[], bad=[];
+  if(activeDays>=24) good.push(t('gh_log',activeDays));
+  if(cur.thu>=cur.chi) good.push(t('gh_flow',cur.thu,cur.chi));
+  if(state.streak>=3) good.push(t('gh_streak',state.streak));
+  if(!good.length) good.push(t('gh_start'));
+  if(pat.repetitive.length) bad.push(t('bh_repeat',pat.repetitive.slice(0,2).map(r=>t('rep_lbl',r)).join(', ')));
+  if(pat.lowSum>total*.15) bad.push(t('bh_lowpri',Math.round(pat.lowSum/total*100),pat.lowSum));
+  if(trendUp&&trendPct>10) bad.push(t('bh_trend',Math.round(trendPct)));
+  if(subsMonthly>cur.thu*.1) bad.push(t('bh_subs',Math.round(subsMonthly/(cur.thu||1)*100),subsMonthly));
+  if(!bad.length) bad.push(t('bh_none'));
+  const recs=[];
+  if(pat.repetitive[0]) recs.push(t('rc_limit',pat.repetitive[0].note,Math.max(1,Math.floor(pat.repetitive[0].n/2)),pat.repetitive[0].sum/2));
+  if(pat.lowSum>0) recs.push(t('rc_wait',pat.lowSum*.4));
+  if(biggestCat) recs.push(t('rc_cap',catIcon(biggestCat[0])+' '+catName(biggestCat[0]),biggestCat[1]*.85));
+  recs.push(t('rc_payself',(cur.thu||4000000)*.2));
+  if(state.subs.length>2) recs.push(t('rc_subs',state.subs.length,subsMonthly));
+
+  const sec=(ti,c)=>`<div class="report-sec"><h4>${ti}</h4>${c}</div>`;
+  let html='';
+  html+=sec(t('rp1'),
+    `<div class="grid g4">
+      <div class="stat blue"><div class="lbl">${t('rp_inc')}</div><div class="val">${fmt(cur.thu)}</div></div>
+      <div class="stat pink"><div class="lbl">${t('rp_exp')}</div><div class="val">${fmt(cur.chi)}</div></div>
+      <div class="stat ${cur.thu-cur.chi>=0?'green':'amber'}"><div class="lbl">${t('rp_diff')}</div><div class="val">${fmt(cur.thu-cur.chi)}</div></div>
+      <div class="stat amber"><div class="lbl">${t('rp_save')}</div><div class="val">~${fmt(savePotential)}</div></div>
+    </div>`);
+  html+=sec(t('rp2'), cats.map(([c,v])=>
+    `<div class="catrow"><span class="nm">${catIcon(c)} ${catName(c)}</span>
+      <div class="bar"><div style="width:0" data-w="${(v/total*100).toFixed(1)}"></div></div>
+      <span class="amt">${fmt(v)} · ${Math.round(v/total*100)}%</span></div>`).join(''));
+  html+=sec(t('rp3'),
+    `<div class="habit">${biggestCat?t('rp_bigcat',catIcon(biggestCat[0])+' '+catName(biggestCat[0]),fmt(biggestCat[1]),Math.round(biggestCat[1]/total*100)):''}</div>
+     <div class="habit">${biggestTx?t('rp_bigtx',biggestTx.note,fmt(biggestTx.amount),dLabel(biggestTx.date)):''}</div>`);
+  html+=sec(t('rp4'),
+    `<div class="habit">${t('rp_chi',chiDelta>0,Math.abs(chiDelta).toFixed(0),fmt(prev.chi),fmt(cur.chi))}</div>
+     <div class="habit">${t('rp_thu',thuDelta>=0,Math.abs(thuDelta).toFixed(0),fmt(prev.thu),fmt(cur.thu))}</div>
+     <div class="habit">${t('rp_trend',trendUp,trendPct.toFixed(0))}</div>`);
+  html+=sec(t('rp5'), good.map(g=>`<div class="habit">🌟 <span>${g}</span></div>`).join(''));
+  html+=sec(t('rp6'), bad.map(b=>`<div class="habit">⚠️ <span>${b}</span></div>`).join(''));
+  html+=sec(t('rp7'), recs.map((r,i)=>`<div class="habit">${['🥇','🥈','🥉','🎯','🔍'][i]||'✅'} <span>${r}</span></div>`).join(''));
+  $('reportBody').innerHTML=html;
+  $('reportCard').hidden=false; $('reportChartsWrap').hidden=false; $('reportCopyBtn').style.display='inline-block';
+  requestAnimationFrame(()=>setTimeout(()=>{
+    document.querySelectorAll('#reportBody .bar>div').forEach(d=>d.style.width=d.dataset.w+'%');
+  },80));
+
+  const textC=getComputedStyle(document.body).getPropertyValue('--muted');
+  const gridC=getComputedStyle(document.body).getPropertyValue('--border');
+  if(catChart) catChart.destroy();
+  catChart=new Chart($('catChart'),{type:'doughnut',
+    data:{labels:cats.map(c=>catIcon(c[0])+' '+catName(c[0])),datasets:[{data:cats.map(c=>c[1]),
+      backgroundColor:['#EC4899','#C084FC','#2563EB','#10B981','#F59E0B','#84CC16','#EF4444','#6B7280'],borderWidth:0}]},
+    options:{plugins:{legend:{position:'bottom',labels:{color:textC}}},cutout:'62%',animation:{animateRotate:!silent,duration:silent?0:1100}}});
+  const wl=[],wt=[],wc=[];
+  for(let w=3;w>=0;w--){ const r=rangeStats(-(w*7+6),-(w*7));
+    wl.push(w===0?t('wk_this'):t('wk_ago',w)); wt.push(r.thu); wc.push(r.chi); }
+  if(weekChart) weekChart.destroy();
+  weekChart=new Chart($('weekChart'),{type:'bar',
+    data:{labels:wl,datasets:[{label:t('ds_thu'),data:wt,backgroundColor:'#10B981',borderRadius:8},{label:t('ds_chi'),data:wc,backgroundColor:'#EC4899',borderRadius:8}]},
+    options:{plugins:{legend:{labels:{color:textC}}},scales:{x:{ticks:{color:textC},grid:{color:gridC}},y:{ticks:{color:textC,callback:v=>(v/1000)+'k'},grid:{color:gridC}}},animation:{duration:silent?0:1000}}});
+
+  state.lastReportText=
+`===== POCKET PILOTAI — 30D =====
+${t('rp_inc')}: ${fmt(cur.thu)} (${thuDelta>=0?'+':''}${thuDelta.toFixed(0)}%)
+${t('rp_exp')}: ${fmt(cur.chi)} (${chiDelta>=0?'+':''}${chiDelta.toFixed(0)}%)
+${cats.map(([c,v])=>`  - ${catName(c)}: ${fmt(v)} (${Math.round(v/total*100)}%)`).join('\n')}
+${t('rp_save')}: ~${fmt(savePotential)}
+${t('rp5')}: ${good.join(' | ')}
+${t('rp6')}: ${bad.join(' | ')}
+${t('rp7')}: ${recs.join(' | ')}`;
+
+  state.reportBuilt=true;
+  if(!silent){ unlock('report'); addPoints(30,t('pt_report')); toast(t('rp_ready'),'ok'); ting(); }
+}
+$('reportBtn').onclick=()=>buildReport(false);
+$('reportCopyBtn').onclick=()=>{ navigator.clipboard.writeText(state.lastReportText).then(()=>toast(t('copy_ok'),'ok')).catch(()=>toast(t('copy_err'),'err')); };
+
+/* ---------- XUẤT ---------- */
+function ensureSummary(){ if(!state.lastSummary){ toast(t('need_analyze'),'warn'); return false;} return true; }
+$('copyBtn').onclick=()=>{ if(!ensureSummary())return; navigator.clipboard.writeText(state.lastSummary).then(()=>toast(t('copy_ok'),'ok')).catch(()=>toast(t('copy_err'),'err')); };
+$('txtBtn').onclick=()=>{ if(!ensureSummary())return;
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([state.lastSummary],{type:'text/plain;charset=utf-8'})); a.download='PocketPilotAI.txt'; a.click(); toast(t('txt_ok'),'ok'); };
+$('imgBtn').onclick=()=>{ if(!ensureSummary())return;
+  html2canvas($('overviewPanel'),{backgroundColor:getComputedStyle(document.body).getPropertyValue('--bg')}).then(cv=>{
+    const a=document.createElement('a'); a.href=cv.toDataURL('image/png'); a.download='PocketPilotAI.png'; a.click(); toast(t('img_ok'),'ok');
+  }).catch(()=>toast(t('img_err'),'err')); };
+
+/* ---------- TTS ---------- */
+$('ttsBtn').onclick=()=>{
+  if(!state.lastAdvice){ toast(t('tts_none'),'warn'); return; }
+  const u=new SpeechSynthesisUtterance(state.lastAdvice); u.lang=lang==='vi'?'vi-VN':'en-US'; u.rate=1;
+  speechSynthesis.cancel(); speechSynthesis.speak(u); toast(t('tts_reading'),'ok');
+};
+
+/* ---------- GIỌNG NÓI ---------- */
+$('micBtn').onclick=()=>{
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ toast(t('no_voice'),'err'); return; }
+  const r=new SR(); r.lang=lang==='vi'?'vi-VN':'en-US'; r.interimResults=false;
+  $('micBtn').classList.add('listening'); toast(t('listening'));
+  r.onresult=e=>{
+    const text=e.results[0][0].transcript.toLowerCase(); toast(t('heard',text));
+    let m, type=null, amtRaw=null, unit=null, note='';
+    if(lang==='vi'){
+      m=text.match(/(chi|thu)\s*([\d.,]+)\s*(k|nghìn|ngàn|triệu|tr)?\s*(.*)/);
+      if(m){ type=m[1]; amtRaw=m[2]; unit=m[3]; note=m[4]; }
+    } else {
+      m=text.match(/(spend|spent|expense|income|earn(?:ed)?|add)\s*\$?([\d.,]+)\s*(k|thousand|million|m)?\s*(?:on|for)?\s*(.*)/);
+      if(m){ type=/income|earn/.test(m[1])?'thu':'chi'; amtRaw=m[2]; unit=m[3]; note=m[4]; }
+    }
+    if(type&&amtRaw){
+      let amt=parseFloat(amtRaw.replace(',','.'));
+      if(unit==='triệu'||unit==='tr'||unit==='million'||unit==='m') amt*=1000000;
+      else if(unit) amt*=1000; else if(amt<1000) amt*=1000;
+      addTx(type,amt,note||t('voice_note'),2);
+    } else toast(t('not_understood'),'warn');
+  };
+  r.onerror=()=>toast(t('not_heard'),'warn');
+  r.onend=()=>$('micBtn').classList.remove('listening');
+  r.start();
+};
+
+/* ============================================================
+   TRỢ LÝ AI — OpenAI (key từ UI) + bộ não cục bộ dự phòng
+   ============================================================ */
+const getKey = () => store.get('ppai_key','') || AI_API_KEY_FALLBACK;
+const getModel = () => store.get('ppai_model','gpt-4o-mini');
+function updateAiMode(){ $('aiMode').textContent = getKey()?t('mode_real'):t('mode_local'); }
+
+function financialContext(){
+  const ws=weekStats(), m=rangeStats(-29,0);
+  const bal=parseFloat($('inBalance').value)||0;
+  const goal=parseFloat($('inGoal').value)||0, days=parseInt($('inDays').value)||0;
+  const cats=byCategory(m.tx).map(([c,v])=>catName(c)+': '+fmt(v)).join(', ');
+  const subs=state.subs.map(s=>`${s.name} ${fmt(s.amount)} (${daysUntil(s.nextDate)}d)`).join(', ');
+  return `User data: balance ${fmt(bal)}; avg spend ${fmt(ws.avg)}/day; 30d income ${fmt(m.thu)}; 30d spending ${fmt(m.chi)}; savings goal ${fmt(goal)} in ${days} days; spending by category: ${cats}; subscriptions: ${subs}.`;
+}
+async function callRealAI(question){
+  const res=await fetch('https://api.openai.com/v1/chat/completions',{
+    method:'POST',
+    headers:{'content-type':'application/json','authorization':'Bearer '+getKey()},
+    body:JSON.stringify({model:getModel(), max_tokens:400, temperature:.7,
+      messages:[
+        {role:'system',content:t('sys_prompt')},
+        {role:'user',content:financialContext()+'\n\nQuestion: '+question}
+      ]})
+  });
+  if(!res.ok) throw new Error('API '+res.status);
+  const d=await res.json();
+  return d.choices[0].message.content;
+}
+function localReply(q){
+  q=q.toLowerCase();
+  const ws=weekStats(), m=rangeStats(-29,0), bal=parseFloat($('inBalance').value)||0;
+  const goal=parseFloat($('inGoal').value)||0, days=parseInt($('inDays').value)||1;
+  const subsDueSum=state.subs.filter(s=>{const d=daysUntil(s.nextDate);return d>=0&&d<=days;}).reduce((s,x)=>s+x.amount,0);
+  const projected=bal-ws.avg*days-subsDueSum;
+  const has=(...ks)=>ks.some(k=>q.includes(k));
+  if(has('số dư','còn bao nhiêu','balance','how much money','money left'))
+    return t('lr_bal',bal,ws.avg,ws.avg>0?t('days_u',Math.floor(bal/ws.avg)):'∞');
+  if(has('mục tiêu','goal'))
+    return goal>0?(projected>=goal?t('lr_goal_hit',projected,goal):t('lr_goal_miss',projected,goal-projected,(goal-projected)/days)):t('lr_goal_none');
+  if(has('đăng ký','định kỳ','subscription','đến hạn','due')){
+    const due=state.subs.filter(s=>{const d=daysUntil(s.nextDate);return d>=0&&d<=7;}).sort((a,b)=>daysUntil(a.nextDate)-daysUntil(b.nextDate));
+    const total=state.subs.reduce((s,x)=>s+x.amount,0);
+    return due.length?t('lr_subs_due',due.length,due.map(s=>t('lr_subs_item',s.icon,s.name,s.amount,daysUntil(s.nextDate))).join(', '),total):t('lr_subs_none',total);
+  }
+  if(has('ngân sách','budget')) return t('lr_budget',m.thu||4000000,Math.max(0,(bal-goal-subsDueSum)/days));
+  if(has('cắt','giảm','cut','reduce')){
+    const pat=detectPatterns();
+    if(pat.repetitive.length){ const r=pat.repetitive[0];
+      return t('lr_cut_rep',r.note,r.n,r.sum,pat.lowSum,(r.sum+pat.lowSum)/2); }
+    return pat.lowSum>0?t('lr_cut_low',pat.lowSum):t('lr_cut_none');
+  }
+  if(has('báo cáo','report')) return t('lr_report');
+  if(has('tiết kiệm','mẹo','tip','save')) return t('lr_tips');
+  if(has('chi','spend')&&has('nhiều','trung bình','bao nhiêu','how much','average'))
+    return t('lr_spend',m.chi,ws.chi,ws.avg,m.chi>m.thu);
+  if(has('chào','hello','hi ','hey')||q==='hi') return t('lr_hello');
+  return t('lr_default');
+}
+/* Gửi tin nhắn — ĐÃ SỬA LỖI LẶP TIN NHẮN:
+   1) Bỏ qua phím Enter khi bộ gõ (IME) đang ghép chữ — nguyên nhân
+      khiến từ cuối bị gửi lại thành tin nhắn riêng.
+   2) Chặn gửi trùng trong 350ms (double Enter/click). */
+let sending=false, lastSendAt=0;
+async function sendChat(txt){
+  const now=Date.now();
+  if(sending || now-lastSendAt<350) return;
+  txt=(txt!==undefined?txt:$('chatInput').value).trim();
+  if(!txt){ toast(t('e_chat_empty'),'warn'); return; }
+  sending=true; lastSendAt=now;
+  const box=$('chatBox');
+  box.insertAdjacentHTML('beforeend','<div class="msg user">'+txt.replace(/</g,'&lt;')+'</div>');
+  $('chatInput').value=''; box.scrollTop=box.scrollHeight;
+  const typing=document.createElement('div'); typing.className='msg bot pulse'; typing.textContent=t('thinking'); box.appendChild(typing); box.scrollTop=box.scrollHeight;
+  let reply;
+  try{
+    if(getKey()){
+      try{ reply='🤖 '+(await callRealAI(txt)).replace(/</g,'&lt;').replace(/\n/g,'<br>'); }
+      catch(err){ reply='🤖 '+localReply(txt); toast(t('api_fail'),'warn'); }
+    } else {
+      await new Promise(r=>setTimeout(r,650));
+      reply='🤖 '+localReply(txt);
+    }
+  } finally { sending=false; }
+  typing.classList.remove('pulse'); typing.innerHTML=reply; box.scrollTop=box.scrollHeight; ting();
+}
+$('chatSend').onclick=()=>sendChat();
+$('chatInput').addEventListener('keydown',e=>{
+  // e.isComposing / keyCode 229 = đang gõ tiếng Việt (IME) → KHÔNG gửi
+  if(e.key==='Enter' && !e.isComposing && e.keyCode!==229){ e.preventDefault(); sendChat(); }
+});
+document.querySelectorAll('.chat-q').forEach(b=>b.onclick=()=>{ document.querySelector('[data-tab="tab-ai"]').click(); sendChat(b.textContent); });
+
+/* ---------- MODAL CÀI ĐẶT API KEY ---------- */
+function refreshKeyStatus(){
+  $('keyStatus').textContent = getKey()?t('key_on',getModel()):t('key_off');
+}
+$('setBtn').onclick=()=>{ $('keyInput').value=store.get('ppai_key',''); $('modelSel').value=getModel(); refreshKeyStatus(); $('setOverlay').classList.add('open'); };
+$('setClose').onclick=()=>$('setOverlay').classList.remove('open');
+$('setOverlay').onclick=e=>{ if(e.target===$('setOverlay')) $('setOverlay').classList.remove('open'); };
+$('keyEye').onclick=()=>{ const i=$('keyInput'); i.type=i.type==='password'?'text':'password'; };
+$('keySave').onclick=()=>{
+  const k=$('keyInput').value.trim();
+  if(k && !k.startsWith('sk-')){ toast(t('e_key'),'err'); return; }
+  if(k) store.set('ppai_key',k); else store.del('ppai_key');
+  store.set('ppai_model',$('modelSel').value);
+  refreshKeyStatus(); updateAiMode();
+  toast(k?t('set_saved'):t('set_cleared'),k?'ok':'warn');
+  $('setOverlay').classList.remove('open');
+};
+$('keyClear').onclick=()=>{ store.del('ppai_key'); $('keyInput').value=''; refreshKeyStatus(); updateAiMode(); toast(t('set_cleared'),'warn'); };
+
+/* ---------- CHUYỂN NGÔN NGỮ ---------- */
+$('langBtn').onclick=()=>{
+  lang = lang==='vi'?'en':'vi';
+  store.set('ppai_lang',lang);
+  applyLang();
+  if(state.lastSummary) analyze(true);      // vẽ lại phân tích theo ngôn ngữ mới (không cộng điểm)
+  if(state.reportBuilt) buildReport(true);  // vẽ lại báo cáo (không cộng điểm)
+  toast(t('lang_sw'),'ok');
+};
+
+/* ---------- SỰ KIỆN GIAO DIỆN ---------- */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabpane').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); $(b.dataset.tab).classList.add('active');
+});
+$('darkBtn').onclick=()=>{ document.body.classList.toggle('dark');
+  $('darkBtn').textContent=document.body.classList.contains('dark')?'☀️':'🌙';
+  if(state.reportBuilt) buildReport(true); }; // vẽ lại biểu đồ — silent, không cộng điểm
+$('musicBtn').onclick=toggleMusic;
+document.querySelectorAll('.preset[data-p]').forEach(b=>b.onclick=()=>{ const [ty,a,n]=b.dataset.p.split(':'); addTx(ty,parseFloat(a),n, ty==='chi'?1:2); });
+document.querySelectorAll('[data-sort]').forEach(b=>b.onclick=()=>{
+  if(state.sortKey===b.dataset.sort) state.sortAsc=!state.sortAsc; else {state.sortKey=b.dataset.sort; state.sortAsc=false;}
+  renderTx(); toast(t('t_sorted',b.textContent.trim()),'ok');
+});
+$('txAddBtn').onclick=()=>{
+  const a=parseFloat($('txAmount').value);
+  if(isNaN(a)||a<=0){ toast(t('e_amt'),'err'); $('txAmount').focus(); return; }
+  const n=$('txNote').value.trim()||t('no_note');
+  addTx($('txType').value,a,n,parseInt($('txPriority').value));
+  $('txAmount').value=''; $('txNote').value='';
+};
+$('analyzeBtn').onclick=()=>analyze(false);
+
+/* ---------- KHỞI ĐỘNG ---------- */
+loadSampleData();
+loadGame();
+applyLang();
+renderTx();
+renderSubs();
+checkSubReminders();
+// Lời chào trong khung chat
+$('chatBox').insertAdjacentHTML('beforeend','<div class="msg bot">🤖 '+t('greeting')+'</div>');
+// Tự phân tích 1 lần để demo hiệu ứng ngay khi mở
+setTimeout(()=>{ analyze(false); toast(t('welcome'),'ok'); },600);
+</script>
+</body>
+</html>
